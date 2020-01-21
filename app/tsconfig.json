@@ -1,0 +1,33 @@
+{
+    "compilerOptions": {
+        "allowJs": false,
+        "allowSyntheticDefaultImports": false,
+        "alwaysStrict": true,
+        "diagnostics": false,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "forceConsistentCasingInFileNames": false,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "noImplicitAny": false,
+        "noImplicitReturns": false,
+        "noImplicitThis": false,
+        "noUnusedLocals": false,
+        "skipLibCheck": false,
+        "sourceMap": false,
+        "strictNullChecks": false,
+        "suppressImplicitAnyIndexErrors": false,
+        "strictPropertyInitialization": false,
+        "rootDir": "*",
+        "types": [
+          "node"
+        ],
+        "target": "ES6"
+      },
+      "include": [
+        "./**/*.ts"
+      ],
+      "exclude": [
+        "node_modules"
+      ]
+}
