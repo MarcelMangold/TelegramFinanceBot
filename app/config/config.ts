@@ -10,11 +10,9 @@ let databaseConnection: DatabaseConnection = {
     port: Number(process.env.PG_PORT)
 }
 
-let config:Config = {
-    databaseConnection: databaseConnection,
-    botToken:process.env.BOT_TOKEN
-}
+let botToken:string =process.env.BOT_TOKEN
 
 
 
-module.exports = config;
+
+export{databaseConnection,botToken};

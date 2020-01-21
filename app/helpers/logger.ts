@@ -41,4 +41,4 @@ let logger: winston.Logger = winston.createLogger({
 
 
 
-module.exports = logger;
+export  {logger};

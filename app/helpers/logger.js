@@ -1,8 +1,8 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const winston = require("winston");
-const logFormat = winston.format.printf((info) => {
-    return `[${info.timestamp}] ${info.level}: ${info.message}`;
+exports.__esModule = true;
+var winston = require("winston");
+var logFormat = winston.format.printf(function (info) {
+    return "[" + info.timestamp + "] " + info.level + ": " + info.message;
 });
 winston.addColors({
     error: 'red',
@@ -10,7 +10,7 @@ winston.addColors({
     info: 'cyan',
     debug: 'green'
 });
-let logger = winston.createLogger({
+var logger = winston.createLogger({
     level: 'info',
     format: winston.format.combine(winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), logFormat),
     transports: [
@@ -19,12 +19,12 @@ let logger = winston.createLogger({
         }),
         new winston.transports.File({
             filename: 'logs/combined.log',
-            level: 'info',
+            level: 'info'
         }),
         new winston.transports.File({
             filename: 'logs/errors.log',
             level: 'error'
         })
-    ],
+    ]
 });
-module.exports = logger;
+exports.logger = logger;
