@@ -5,7 +5,9 @@ const queries = {
     'CHECK_IF_CHAT_EXIST': 'SELECT * FROM chat where id= $1',
     'ADD_CHAT': 'INSERT INTO chat (id) VALUES ($1)',
     'ADD_USER': 'INSERT INTO user_management (id) VALUES ($1)',
-    'GET_ACCOUNT_BALANCE': 'SELECT SUM (amount) as sum FROM TRANSACTION  WHERE userId = $1;'
+    'GET_ACCOUNT_BALANCE': 'SELECT SUM (amount) as sum FROM TRANSACTION  WHERE userId = $1;',
+    'ADD_CATEGORIE': 'INSERT INTO categorie (name, userId) VALUES ($1, $2)',,
+    'SHOW_CATEGORIES': 'SELECT * FROM categorie WHERE userId = $1;'
 }
 
 

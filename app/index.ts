@@ -38,6 +38,21 @@ bot.catch((err, ctx) => {
     logger.error(`Ooops, ecountered an error for ${ctx.updateType}`, err)
 })
 
+bot.command('showCategories', async (ctx) => {
+    let chatId = ctx.update.message.chat.id;
+    let userID = ctx.update.message.from.id;
+
+    await addChatAndUserIfNotExist(chatId, userID);
+    let result = await executeQuery(queries.SHOW_CATEGORIES, [userID]);
+    let htmlText = '<b>Currently there are no categories todos</b>';
+    if (result.rows.length > 0) {
+        htmlText = '<b>Categories:</b>';
+        for (let i = 0; i < result.rows.length; i++) {
+            htmlText += `\n ${i + 1}. ${result.rows[i].name}`;
+        }
+    }
+    ctx.replyWithHTML(htmlText);
+})
 
 
 /* bot.command('newAmount', async (ctx) => {
@@ -54,6 +69,39 @@ bot.catch((err, ctx) => {
     }
     ctx.replyWithHTML(htmlText);
 }) */
+
+
+
+
+
+const newCategorie = new WizardScene(
+    "new_categorie",
+    ctx => {
+        ctx.reply("Please type the categorie you want to create");
+        return ctx.wizard.next();
+    },
+    async ctx => {
+        let userId = ctx.message.from.id;
+        let chatId = ctx.message.chat.id;      
+        try {
+            await addChatAndUserIfNotExist(chatId, userId);
+            //name,  amount, isPositive, notice, categorieId, userID, chatId
+            await executeQuery(queries.ADD_CATEGORIE, [ctx.message.text, userId]);
+            ctx.replyWithHTML(
+                `The category ${ctx.message.text} was created successfully`
+            );
+        }
+        catch (err) {
+            logger.error(err);
+            ctx.replyWithHTML(
+                `<b>Error while saving the categorie in the database</b>`
+            );
+        }
+      
+     
+        return ctx.scene.leave();
+    } 
+);
 
 
 
@@ -96,9 +144,16 @@ const newAmount = new WizardScene(
 );
 
 
-const stage = new Stage([newAmount]);
+const stage = new Stage([newAmount,newCategorie]);
 bot.use(session());
 bot.use(stage.middleware());
+
+
+bot.command('addCategorie', async ({ reply, scene }) => {
+    await scene.leave()
+    await scene.enter('new_categorie')
+}
+);
 
 bot.command('add', async (ctx) => {
     let userId = ctx.message.from.id;

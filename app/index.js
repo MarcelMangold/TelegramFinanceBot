@@ -61,6 +61,31 @@ bot.start(function (ctx) {
 bot["catch"](function (err, ctx) {
     logger_1.logger.error("Ooops, ecountered an error for " + ctx.updateType, err);
 });
+bot.command('showCategories', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var chatId, userID, result, htmlText, i;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                chatId = ctx.update.message.chat.id;
+                userID = ctx.update.message.from.id;
+                return [4 /*yield*/, addChatAndUserIfNotExist(chatId, userID)];
+            case 1:
+                _a.sent();
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.SHOW_CATEGORIES, [userID])];
+            case 2:
+                result = _a.sent();
+                htmlText = '<b>Currently there are no categories todos</b>';
+                if (result.rows.length > 0) {
+                    htmlText = '<b>Categories:</b>';
+                    for (i = 0; i < result.rows.length; i++) {
+                        htmlText += "\n " + (i + 1) + " - " + result.rows[i].name;
+                    }
+                }
+                ctx.replyWithHTML(htmlText);
+                return [2 /*return*/];
+        }
+    });
+}); });
 /* bot.command('newAmount', async (ctx) => {
 
     let chatId = ctx.update.message.chat.id;
@@ -75,6 +100,38 @@ bot["catch"](function (err, ctx) {
     }
     ctx.replyWithHTML(htmlText);
 }) */
+var newCategorie = new WizardScene("new_categorie", function (ctx) {
+    ctx.reply("Please type the categorie you want to create");
+    return ctx.wizard.next();
+}, function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var userId, chatId, err_1;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                userId = ctx.message.from.id;
+                chatId = ctx.message.chat.id;
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 4, , 5]);
+                return [4 /*yield*/, addChatAndUserIfNotExist(chatId, userId)];
+            case 2:
+                _a.sent();
+                //name,  amount, isPositive, notice, categorieId, userID, chatId
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.ADD_CATEGORIE, [ctx.message.text, userId])];
+            case 3:
+                //name,  amount, isPositive, notice, categorieId, userID, chatId
+                _a.sent();
+                ctx.replyWithHTML("The category " + ctx.message.text + " was created successfully");
+                return [3 /*break*/, 5];
+            case 4:
+                err_1 = _a.sent();
+                logger_1.logger.error(err_1);
+                ctx.replyWithHTML("<b>Error while saving the categorie in the database</b>");
+                return [3 /*break*/, 5];
+            case 5: return [2 /*return*/, ctx.scene.leave()];
+        }
+    });
+}); });
 var newAmount = new WizardScene("new_amount", function (ctx) {
     var messageId = ctx.update.callback_query.message.message_id;
     var actionData = ctx.update.callback_query.data;
@@ -83,7 +140,7 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
     ctx.reply("Please enter the amount you spent");
     return ctx.wizard.next();
 }, function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var userId, chatId, err_1;
+    var userId, chatId, err_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -104,17 +161,33 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
                 ctx.replyWithHTML("The amount of <b>" + parseInt(ctx.update.message.text) + "\u20AC</b> were booked to the account");
                 return [3 /*break*/, 5];
             case 4:
-                err_1 = _a.sent();
-                logger_1.logger.error(err_1);
+                err_2 = _a.sent();
+                logger_1.logger.error(err_2);
                 ctx.replyWithHTML("<b>Error while saving the money in the database</b>");
                 return [3 /*break*/, 5];
             case 5: return [2 /*return*/, ctx.scene.leave()];
         }
     });
 }); });
-var stage = new Stage([newAmount]);
+var stage = new Stage([newAmount, newCategorie]);
 bot.use(session());
 bot.use(stage.middleware());
+bot.command('addCategorie', function (_a) {
+    var reply = _a.reply, scene = _a.scene;
+    return __awaiter(void 0, void 0, void 0, function () {
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0: return [4 /*yield*/, scene.leave()];
+                case 1:
+                    _b.sent();
+                    return [4 /*yield*/, scene.enter('new_categorie')];
+                case 2:
+                    _b.sent();
+                    return [2 /*return*/];
+            }
+        });
+    });
+});
 bot.command('add', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var userId, chatId, result, options, keyboard_1, row, rows, columnCount, i, actionName, string;
     return __generator(this, function (_a) {
@@ -182,7 +255,7 @@ bot.action(regex, function (ctx) { return __awaiter(void 0, void 0, void 0, func
     });
 }); });
 bot.command('accountBalance', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var result, err_2;
+    var result, err_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -193,8 +266,8 @@ bot.command('accountBalance', function (ctx) { return __awaiter(void 0, void 0, 
                 ctx.replyWithHTML("Your actual account balance is <b>" + result.rows[0].sum + "\u20AC</b>");
                 return [3 /*break*/, 3];
             case 2:
-                err_2 = _a.sent();
-                logger_1.logger.error(err_2);
+                err_3 = _a.sent();
+                logger_1.logger.error(err_3);
                 ctx.replyWithHTML("Error while checking the account balance ");
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
