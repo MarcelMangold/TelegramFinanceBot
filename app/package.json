@@ -18,9 +18,11 @@
   "author": "Marcel Mangold",
   "license": "MIT",
   "dependencies": {
+    "@types/pg": "^7.14.1",
     "dotenv": "^8.2.0",
     "pg": "^7.17.1",
     "telegraf": "^3.35.0",
+    "telegraf-keyboard": "^1.1.2",
     "typescript": "^3.7.5",
     "winston": "^3.2.1"
   }

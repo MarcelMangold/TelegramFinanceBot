@@ -43,7 +43,8 @@ var logger_1 = require("./helpers/logger");
 var Telegraf = require('telegraf');
 var session = Telegraf.session;
 var Markup = Telegraf.Markup;
-var extra = Telegraf.Extra;
+var Extra = Telegraf.Extra;
+var Keyboard = require('telegraf-keyboard');
 var WizardScene = require("telegraf/scenes/wizard");
 var Stage = require("telegraf/stage");
 var bot = new Telegraf(botToken);
@@ -75,7 +76,11 @@ bot["catch"](function (err, ctx) {
     ctx.replyWithHTML(htmlText);
 }) */
 var newAmount = new WizardScene("new_amount", function (ctx) {
-    ctx.reply("Please enter the amount, you have spent");
+    var messageId = ctx.update.callback_query.message.message_id;
+    var actionData = ctx.update.callback_query.data;
+    ctx.tg.deleteMessage(ctx.update.callback_query.message.chat.id, ctx.update.callback_query.message.message_id);
+    ctx.wizard.state.categorie = [actionData.replace("action", "").split("-")[0]];
+    ctx.reply("Please enter the amount you spent");
     return ctx.wizard.next();
 }, function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var userId, chatId, err_1;
@@ -84,49 +89,118 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
             case 0:
                 userId = ctx.message.from.id;
                 chatId = ctx.message.chat.id;
+                ctx.wizard.state.item = ctx.message.text;
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 4, , 5]);
-                console.log(ctx);
                 return [4 /*yield*/, addChatAndUserIfNotExist(chatId, userId)];
             case 2:
                 _a.sent();
                 //name,  amount, isPositive, notice, categorieId, userID, chatId
-                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.INSERT_TRANSACTION, ["'testName'", parseInt(ctx.message.text), true, "'notice'", 1, parseInt(userId), parseInt(chatId)])];
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.INSERT_TRANSACTION, ["test", parseInt(ctx.update.message.text), true, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId])];
             case 3:
                 //name,  amount, isPositive, notice, categorieId, userID, chatId
                 _a.sent();
+                ctx.replyWithHTML("The amount of <b>" + parseInt(ctx.update.message.text) + "\u20AC</b> were booked to the account");
                 return [3 /*break*/, 5];
             case 4:
                 err_1 = _a.sent();
                 logger_1.logger.error(err_1);
+                ctx.replyWithHTML("<b>Error while saving the money in the database</b>");
                 return [3 /*break*/, 5];
-            case 5:
-                ctx.wizard.state.item = ctx.message.text;
-                ctx.replyWithHTML("Amount <b>\"" + ctx.wizard.state.item + "\" </b> added");
-                return [2 /*return*/, ctx.scene.leave()];
+            case 5: return [2 /*return*/, ctx.scene.leave()];
         }
     });
 }); });
 var stage = new Stage([newAmount]);
 bot.use(session());
 bot.use(stage.middleware());
-bot.command('add', function (_a) {
-    var reply = _a.reply, scene = _a.scene;
-    return __awaiter(void 0, void 0, void 0, function () {
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0: return [4 /*yield*/, scene.leave()];
-                case 1:
-                    _b.sent();
-                    return [4 /*yield*/, scene.enter('new_amount')];
-                case 2:
-                    _b.sent();
-                    return [2 /*return*/];
-            }
-        });
+bot.command('add', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var userId, chatId, result, options, keyboard_1, row, rows, columnCount, i, actionName, string;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                userId = ctx.message.from.id;
+                chatId = ctx.message.chat.id;
+                addChatIfNotExist(chatId);
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.GET_CATEGORIES, [userId])];
+            case 1:
+                result = _a.sent();
+                if (result.rowCount > 0) {
+                    options = {
+                        inline: true,
+                        duplicates: false,
+                        newline: false
+                    };
+                    keyboard_1 = new Keyboard(options);
+                    row = [];
+                    rows = [];
+                    columnCount = 0;
+                    for (i = 0; i < result.rows.length; i++) {
+                        ++columnCount;
+                        actionName = result.rows[i].id + "-" + result.rows[i].name;
+                        string = result.rows[i].name + ":action" + actionName;
+                        row.push(string);
+                        if (columnCount == 2) {
+                            rows.push(row);
+                            row = [];
+                            columnCount = 0;
+                        }
+                    }
+                    ;
+                    rows.push(row);
+                    rows.forEach(function (element) {
+                        keyboard_1
+                            .add(element);
+                    });
+                    ctx.reply('Select the amounts categorie', keyboard_1.draw());
+                }
+                else {
+                    ctx.replyWithHTML('<b>Currently there are no open todos</b>');
+                }
+                return [2 /*return*/];
+        }
     });
-});
+}); });
+var regex = new RegExp('action[0-9]');
+bot.action(regex, function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var actionData;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                actionData = ctx.update.callback_query.data;
+                ctx.replyWithHTML("You have chosen the category <b> " + actionData.replace("action", "").split("-")[1] + " </b>", Extra.markup(Markup.removeKeyboard()));
+                ctx.editMessageReplyMarkup({});
+                return [4 /*yield*/, ctx.scene.leave()];
+            case 1:
+                _a.sent();
+                return [4 /*yield*/, ctx.scene.enter('new_amount')];
+            case 2:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
+bot.command('accountBalance', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var result, err_2;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.GET_ACCOUNT_BALANCE, [ctx.update.message.from.id])];
+            case 1:
+                result = _a.sent();
+                ctx.replyWithHTML("Your actual account balance is <b>" + result.rows[0].sum + "\u20AC</b>");
+                return [3 /*break*/, 3];
+            case 2:
+                err_2 = _a.sent();
+                logger_1.logger.error(err_2);
+                ctx.replyWithHTML("Error while checking the account balance ");
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
 bot.launch();
 function addChatAndUserIfNotExist(chatId, userId) {
     return __awaiter(this, void 0, void 0, function () {

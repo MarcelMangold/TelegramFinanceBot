@@ -3,11 +3,12 @@ const { databaseConnection, botToken } = require('./config/config');
 import { executeQuery } from './helpers/database-adapter';
 import { queries } from './helpers/queries';
 import { logger } from './helpers/logger';
+import { QueryResult } from 'pg';
 const Telegraf = require('telegraf');
 const session = Telegraf.session;
 const Markup = Telegraf.Markup;
-const extra = Telegraf.Extra;
-const Keyboard = Telegraf.Keyboard;
+const Extra = Telegraf.Extra;
+const Keyboard = require('telegraf-keyboard');
 const WizardScene = require("telegraf/scenes/wizard");
 const Stage = require("telegraf/stage");
 
@@ -58,32 +59,40 @@ bot.catch((err, ctx) => {
 
 const newAmount = new WizardScene(
     "new_amount",
-   
     ctx => {
-        ctx.reply("Please enter the amount, you have spent");
+        let messageId = ctx.update.callback_query.message.message_id
+        let actionData:string = ctx.update.callback_query.data;
+        ctx.tg.deleteMessage(ctx.update.callback_query.message.chat.id, ctx.update.callback_query.message.message_id)
+        ctx.wizard.state.categorie = [actionData.replace("action", "").split("-")[0]];
+        ctx.reply("Please enter the amount you spent");
         return ctx.wizard.next();
     },
     async ctx => {
         let userId = ctx.message.from.id;
         let chatId = ctx.message.chat.id;
+        ctx.wizard.state.item = ctx.message.text;
+        
+        
         try {
             await addChatAndUserIfNotExist(chatId, userId);
             //name,  amount, isPositive, notice, categorieId, userID, chatId
-            await executeQuery(queries.INSERT_TRANSACTION, ["testName", parseInt(ctx.message.text), true, "notice", 1, parseInt(userId), parseInt(chatId)]);
+            await executeQuery(queries.INSERT_TRANSACTION, ["test", parseInt(ctx.update.message.text),true, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId]);
+            ctx.replyWithHTML(
+                `The amount of <b>${
+                    parseInt(ctx.update.message.text)
+                }€</b> were booked to the account`
+            );
         }
         catch (err) {
             logger.error(err);
+            ctx.replyWithHTML(
+                `<b>Error while saving the money in the database</b>`
+            );
         }
-
-        ctx.wizard.state.item = ctx.message.text;
-
-        ctx.replyWithHTML(
-            `Amount <b>"${
-            ctx.wizard.state.item
-            }" </b> added`
-        );
+      
+     
         return ctx.scene.leave();
-    }
+    } 
 );
 
 
@@ -91,12 +100,74 @@ const stage = new Stage([newAmount]);
 bot.use(session());
 bot.use(stage.middleware());
 
-bot.command('add', async ({ reply, scene }) => {
-    await scene.leave()
-    await scene.enter('new_amount')
+bot.command('add', async (ctx) => {
+    let userId = ctx.message.from.id;
+    let chatId = ctx.message.chat.id;
+    addChatIfNotExist(chatId);
+
+    let result: QueryResult = await executeQuery(queries.GET_CATEGORIES, [userId]);
+    if (result.rowCount > 0) {
+        const options = {
+            inline: true, // default
+            duplicates: false, // default
+            newline: false, // default
+        };
+        const keyboard = new Keyboard(options);
+        let row = [];
+        let rows = [];
+        let columnCount = 0;
+        for (let i = 0; i < result.rows.length; i++) {
+            ++columnCount;
+            let actionName:string = result.rows[i].id + "-" + result.rows[i].name
+            let string = result.rows[i].name + ":action" + actionName;
+
+            row.push(string)
+            if (columnCount == 2) {
+                rows.push(row);
+                row = [];
+                columnCount = 0;
+            }
+
+        };
+        rows.push(row);
+        rows.forEach(element => {
+            keyboard
+                .add(element)
+
+        })
+        ctx.reply('Select the amounts categorie', keyboard.draw());
+    }
+    else {
+        ctx.replyWithHTML('<b>Currently there are no open todos</b>');
+    }
 }
 );
 
+const regex = new RegExp('action[0-9]');
+
+bot.action(regex, async (ctx) => {
+    let actionData = ctx.update.callback_query.data;
+
+    ctx.replyWithHTML(`You have chosen the category <b> ${actionData.replace("action", "").split("-")[1]} </b>`, Extra.markup(Markup.removeKeyboard()));
+    ctx.editMessageReplyMarkup({});
+
+    await ctx.scene.leave();
+    await ctx.scene.enter('new_amount');
+
+} );
+
+bot.command('accountBalance', async (ctx) => {
+ 
+    try {
+        let result: QueryResult = await executeQuery(queries.GET_ACCOUNT_BALANCE, [ctx.update.message.from.id]);
+        ctx.replyWithHTML(`Your actual account balance is <b>${result.rows[0].sum}€</b>`);
+    } catch (err) {
+        logger.error(err);
+        ctx.replyWithHTML(`Error while checking the account balance `);
+    }
+   
+}
+);
 
 bot.launch()
 
