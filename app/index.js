@@ -78,7 +78,7 @@ bot.command('showCategories', function (ctx) { return __awaiter(void 0, void 0, 
                 if (result.rows.length > 0) {
                     htmlText = '<b>Categories:</b>';
                     for (i = 0; i < result.rows.length; i++) {
-                        htmlText += "\n " + (i + 1) + " - " + result.rows[i].name;
+                        htmlText += "\n " + (i + 1) + ". " + result.rows[i].name;
                     }
                 }
                 ctx.replyWithHTML(htmlText);
@@ -132,12 +132,21 @@ var newCategorie = new WizardScene("new_categorie", function (ctx) {
         }
     });
 }); });
-var newAmount = new WizardScene("new_amount", function (ctx) {
-    var messageId = ctx.update.callback_query.message.message_id;
+var newIncome = new WizardScene("new_income", function (ctx) {
     var actionData = ctx.update.callback_query.data;
-    ctx.tg.deleteMessage(ctx.update.callback_query.message.chat.id, ctx.update.callback_query.message.message_id);
+    console.log(ctx.update.callback_query.message.message_id);
+    try {
+        ctx.tg.deleteMessage(ctx.update.callback_query.message.chat.id, ctx.update.callback_query.message.message_id);
+    }
+    catch (err) {
+        logger_1.logger.error("error while deleting message");
+    }
     ctx.wizard.state.categorie = [actionData.replace("action", "").split("-")[0]];
-    ctx.reply("Please enter the amount you spent");
+    ctx.reply("Please enter the income you got");
+    return ctx.wizard.next();
+}, function (ctx) {
+    ctx.wizard.state.amount = ctx.message.text;
+    ctx.reply("Please enter the reason for the income");
     return ctx.wizard.next();
 }, function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var userId, chatId, err_2;
@@ -146,7 +155,6 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
             case 0:
                 userId = ctx.message.from.id;
                 chatId = ctx.message.chat.id;
-                ctx.wizard.state.item = ctx.message.text;
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 4, , 5]);
@@ -154,11 +162,11 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
             case 2:
                 _a.sent();
                 //name,  amount, isPositive, notice, categorieId, userID, chatId
-                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.INSERT_TRANSACTION, ["test", parseInt(ctx.update.message.text), true, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId])];
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.INSERT_TRANSACTION, [ctx.message.text, parseInt(ctx.wizard.state.amount), true, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId])];
             case 3:
                 //name,  amount, isPositive, notice, categorieId, userID, chatId
                 _a.sent();
-                ctx.replyWithHTML("The amount of <b>" + parseInt(ctx.update.message.text) + "\u20AC</b> were booked to the account");
+                ctx.replyWithHTML("The income of <b>" + parseInt(ctx.wizard.state.amount) + "\u20AC</b> were booked to the account");
                 return [3 /*break*/, 5];
             case 4:
                 err_2 = _a.sent();
@@ -169,7 +177,52 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
         }
     });
 }); });
-var stage = new Stage([newAmount, newCategorie]);
+var newAmount = new WizardScene("new_amount", function (ctx) {
+    var actionData = ctx.update.callback_query.data;
+    console.log(ctx.update.callback_query.message.message_id);
+    try {
+        ctx.tg.deleteMessage(ctx.update.callback_query.message.chat.id, ctx.update.callback_query.message.message_id);
+    }
+    catch (err) {
+        logger_1.logger.error("error while deleting message");
+    }
+    ctx.wizard.state.categorie = [actionData.replace("action", "").split("-")[0]];
+    ctx.reply("Please enter the amount you spent");
+    return ctx.wizard.next();
+}, function (ctx) {
+    ctx.wizard.state.amount = ctx.message.text;
+    ctx.reply("Please enter the reason for the spending");
+    return ctx.wizard.next();
+}, function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var userId, chatId, err_3;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                userId = ctx.message.from.id;
+                chatId = ctx.message.chat.id;
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 4, , 5]);
+                return [4 /*yield*/, addChatAndUserIfNotExist(chatId, userId)];
+            case 2:
+                _a.sent();
+                //name,  amount, isPositive, notice, categorieId, userID, chatId
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.INSERT_TRANSACTION, [ctx.message.text, parseInt(ctx.wizard.state.amount), false, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId])];
+            case 3:
+                //name,  amount, isPositive, notice, categorieId, userID, chatId
+                _a.sent();
+                ctx.replyWithHTML("The amount of <b>" + parseInt(ctx.wizard.state.amount) + "\u20AC</b> were booked to the account");
+                return [3 /*break*/, 5];
+            case 4:
+                err_3 = _a.sent();
+                logger_1.logger.error(err_3);
+                ctx.replyWithHTML("<b>Error while saving the money in the database</b>");
+                return [3 /*break*/, 5];
+            case 5: return [2 /*return*/, ctx.scene.leave()];
+        }
+    });
+}); });
+var stage = new Stage([newAmount, newCategorie, newIncome]);
 bot.use(session());
 bot.use(stage.middleware());
 bot.command('addCategorie', function (_a) {
@@ -188,49 +241,76 @@ bot.command('addCategorie', function (_a) {
         });
     });
 });
-bot.command('add', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var userId, chatId, result, options, keyboard_1, row, rows, columnCount, i, actionName, string;
+function getCategoriesInKeyboard(userId, kindOfKeyboard) {
+    return __awaiter(this, void 0, void 0, function () {
+        var result, options, keyboard_1, row, rows, columnCount, i, actionName, string;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.GET_CATEGORIES, [userId])];
+                case 1:
+                    result = _a.sent();
+                    if (result.rowCount > 0) {
+                        options = {
+                            inline: true,
+                            duplicates: false,
+                            newline: false
+                        };
+                        keyboard_1 = new Keyboard(options);
+                        row = [];
+                        rows = [];
+                        columnCount = 0;
+                        for (i = 0; i < result.rows.length; i++) {
+                            ++columnCount;
+                            actionName = result.rows[i].id + "-" + result.rows[i].name + "-" + kindOfKeyboard;
+                            string = result.rows[i].name + ":action" + actionName;
+                            row.push(string);
+                            if (columnCount == 2) {
+                                rows.push(row);
+                                row = [];
+                                columnCount = 0;
+                            }
+                        }
+                        ;
+                        rows.push(row);
+                        rows.forEach(function (element) {
+                            keyboard_1
+                                .add(element);
+                        });
+                        return [2 /*return*/, keyboard_1];
+                    }
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+bot.command('addAmount', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var userId, chatId, keyboard;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 userId = ctx.message.from.id;
                 chatId = ctx.message.chat.id;
                 addChatIfNotExist(chatId);
-                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.GET_CATEGORIES, [userId])];
+                return [4 /*yield*/, getCategoriesInKeyboard(userId, "new_amount")];
             case 1:
-                result = _a.sent();
-                if (result.rowCount > 0) {
-                    options = {
-                        inline: true,
-                        duplicates: false,
-                        newline: false
-                    };
-                    keyboard_1 = new Keyboard(options);
-                    row = [];
-                    rows = [];
-                    columnCount = 0;
-                    for (i = 0; i < result.rows.length; i++) {
-                        ++columnCount;
-                        actionName = result.rows[i].id + "-" + result.rows[i].name;
-                        string = result.rows[i].name + ":action" + actionName;
-                        row.push(string);
-                        if (columnCount == 2) {
-                            rows.push(row);
-                            row = [];
-                            columnCount = 0;
-                        }
-                    }
-                    ;
-                    rows.push(row);
-                    rows.forEach(function (element) {
-                        keyboard_1
-                            .add(element);
-                    });
-                    ctx.reply('Select the amounts categorie', keyboard_1.draw());
-                }
-                else {
-                    ctx.replyWithHTML('<b>Currently there are no open todos</b>');
-                }
+                keyboard = _a.sent();
+                ctx.reply('Select the amounts categorie', keyboard.draw());
+                return [2 /*return*/];
+        }
+    });
+}); });
+bot.command('addIncome', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var userId, chatId, keyboard;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                userId = ctx.message.from.id;
+                chatId = ctx.message.chat.id;
+                addChatIfNotExist(chatId);
+                return [4 /*yield*/, getCategoriesInKeyboard(userId, "new_income")];
+            case 1:
+                keyboard = _a.sent();
+                ctx.reply('Select the incomes categorie', keyboard.draw());
                 return [2 /*return*/];
         }
     });
@@ -247,7 +327,7 @@ bot.action(regex, function (ctx) { return __awaiter(void 0, void 0, void 0, func
                 return [4 /*yield*/, ctx.scene.leave()];
             case 1:
                 _a.sent();
-                return [4 /*yield*/, ctx.scene.enter('new_amount')];
+                return [4 /*yield*/, ctx.scene.enter([actionData.replace("action", "").split("-")[2]].toString())];
             case 2:
                 _a.sent();
                 return [2 /*return*/];
@@ -255,20 +335,65 @@ bot.action(regex, function (ctx) { return __awaiter(void 0, void 0, void 0, func
     });
 }); });
 bot.command('accountBalance', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var result, err_3;
+    var resultIncome, resultSpend, income, spend, err_4;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 3, , 4]);
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.GET_INCOME_AMOUNT, [ctx.update.message.from.id])];
+            case 1:
+                resultIncome = _a.sent();
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.GET_SPEND_AMOUNT, [ctx.update.message.from.id])];
+            case 2:
+                resultSpend = _a.sent();
+                income = resultIncome.rows[0].sum == null ? 0 : resultIncome.rows[0].sum;
+                spend = resultSpend.rows[0].sum == null ? 0 : resultSpend.rows[0].sum;
+                ctx.replyWithHTML("Account balance: \n" +
+                    ("Income: <b>" + income + "\u20AC</b> \n") +
+                    ("Spend: <b>" + spend + "\u20AC</b> \n") +
+                    ("Sum: <b>" + (income - spend) + "\u20AC</b>"));
+                return [3 /*break*/, 4];
+            case 3:
+                err_4 = _a.sent();
+                logger_1.logger.error(err_4);
+                ctx.replyWithHTML("Error while checking the account balance ");
+                return [3 /*break*/, 4];
+            case 4: return [2 /*return*/];
+        }
+    });
+}); });
+bot.command('accountBalanceDetails', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var queryResult, result, text_1, actualCategorieId_1, sumOfCategorie_1, err_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 2, , 3]);
-                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.GET_ACCOUNT_BALANCE, [ctx.update.message.from.id])];
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id])];
             case 1:
-                result = _a.sent();
-                ctx.replyWithHTML("Your actual account balance is <b>" + result.rows[0].sum + "\u20AC</b>");
+                queryResult = _a.sent();
+                result = queryResult.rows;
+                text_1 = 'Account balance details:\n';
+                actualCategorieId_1 = result[0].id;
+                text_1 += "<b>" + result[0].categoriename + "</b>";
+                sumOfCategorie_1 = 0;
+                result.forEach(function (element) {
+                    var amount = element.ispositive == true ? element.amount : parseInt("-" + element.amount);
+                    if (element.id > actualCategorieId_1) {
+                        text_1 += "\nSum of categorie " + sumOfCategorie_1;
+                        sumOfCategorie_1 = 0;
+                        text_1 += "\n---------------------------------------------";
+                        text_1 += "\n <b>" + element.categoriename + "</b>";
+                        actualCategorieId_1 = element.id;
+                    }
+                    text_1 += "\n Reason: " + element.name + "  <b>" + amount + "\u20AC</b>";
+                    sumOfCategorie_1 += amount;
+                });
+                ctx.replyWithHTML(text_1);
                 return [3 /*break*/, 3];
             case 2:
-                err_3 = _a.sent();
-                logger_1.logger.error(err_3);
-                ctx.replyWithHTML("Error while checking the account balance ");
+                err_5 = _a.sent();
+                logger_1.logger.error(err_5);
+                ctx.replyWithHTML("Error while checking the account balance details");
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
         }

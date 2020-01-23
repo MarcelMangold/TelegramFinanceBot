@@ -4,6 +4,8 @@ import { executeQuery } from './helpers/database-adapter';
 import { queries } from './helpers/queries';
 import { logger } from './helpers/logger';
 import { QueryResult } from 'pg';
+import { AccountBalanceDetails } from './@types/queries';
+
 const Telegraf = require('telegraf');
 const session = Telegraf.session;
 const Markup = Telegraf.Markup;
@@ -82,7 +84,7 @@ const newCategorie = new WizardScene(
     },
     async ctx => {
         let userId = ctx.message.from.id;
-        let chatId = ctx.message.chat.id;      
+        let chatId = ctx.message.chat.id;
         try {
             await addChatAndUserIfNotExist(chatId, userId);
             //name,  amount, isPositive, notice, categorieId, userID, chatId
@@ -97,37 +99,38 @@ const newCategorie = new WizardScene(
                 `<b>Error while saving the categorie in the database</b>`
             );
         }
-      
-     
+
+
         return ctx.scene.leave();
-    } 
+    }
 );
 
-
-
-const newAmount = new WizardScene(
-    "new_amount",
+const newIncome = new WizardScene(
+    "new_income",
     ctx => {
-        let messageId = ctx.update.callback_query.message.message_id
-        let actionData:string = ctx.update.callback_query.data;
-        ctx.tg.deleteMessage(ctx.update.callback_query.message.chat.id, ctx.update.callback_query.message.message_id)
+        let actionData: string = ctx.update.callback_query.data;
+        console.log(ctx.update.callback_query.message.message_id);
+        try { ctx.tg.deleteMessage(ctx.update.callback_query.message.chat.id, ctx.update.callback_query.message.message_id) }
+        catch (err) { logger.error("error while deleting message") }
         ctx.wizard.state.categorie = [actionData.replace("action", "").split("-")[0]];
-        ctx.reply("Please enter the amount you spent");
+        ctx.reply("Please enter the income you got");
+        return ctx.wizard.next();
+    },
+    ctx => {
+        ctx.wizard.state.amount = ctx.message.text;
+        ctx.reply("Please enter the reason for the income");
         return ctx.wizard.next();
     },
     async ctx => {
         let userId = ctx.message.from.id;
         let chatId = ctx.message.chat.id;
-        ctx.wizard.state.item = ctx.message.text;
-        
-        
         try {
             await addChatAndUserIfNotExist(chatId, userId);
             //name,  amount, isPositive, notice, categorieId, userID, chatId
-            await executeQuery(queries.INSERT_TRANSACTION, ["test", parseInt(ctx.update.message.text),true, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId]);
+            await executeQuery(queries.INSERT_TRANSACTION, [ctx.message.text, parseInt(ctx.wizard.state.amount), true, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId]);
             ctx.replyWithHTML(
-                `The amount of <b>${
-                    parseInt(ctx.update.message.text)
+                `The income of <b>${
+                parseInt(ctx.wizard.state.amount)
                 }€</b> were booked to the account`
             );
         }
@@ -137,14 +140,56 @@ const newAmount = new WizardScene(
                 `<b>Error while saving the money in the database</b>`
             );
         }
-      
-     
+
+
         return ctx.scene.leave();
-    } 
+    }
+);
+
+const newAmount = new WizardScene(
+    "new_amount",
+    ctx => {
+        let actionData: string = ctx.update.callback_query.data;
+        console.log(ctx.update.callback_query.message.message_id);
+        try { ctx.tg.deleteMessage(ctx.update.callback_query.message.chat.id, ctx.update.callback_query.message.message_id) }
+        catch (err) { logger.error("error while deleting message") }
+
+        ctx.wizard.state.categorie = [actionData.replace("action", "").split("-")[0]];
+        ctx.reply("Please enter the amount you spent");
+        return ctx.wizard.next();
+    },
+    ctx => {
+        ctx.wizard.state.amount = ctx.message.text;
+        ctx.reply("Please enter the reason for the spending");
+        return ctx.wizard.next();
+    },
+    async ctx => {
+        let userId = ctx.message.from.id;
+        let chatId = ctx.message.chat.id;
+        try {
+            await addChatAndUserIfNotExist(chatId, userId);
+            //name,  amount, isPositive, notice, categorieId, userID, chatId
+            await executeQuery(queries.INSERT_TRANSACTION, [ctx.message.text, parseInt(ctx.wizard.state.amount), false, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId]);
+            ctx.replyWithHTML(
+                `The amount of <b>${
+                parseInt(ctx.wizard.state.amount)
+                }€</b> were booked to the account`
+            );
+        }
+        catch (err) {
+            logger.error(err);
+            ctx.replyWithHTML(
+                `<b>Error while saving the money in the database</b>`
+            );
+        }
+
+
+        return ctx.scene.leave();
+    }
 );
 
 
-const stage = new Stage([newAmount,newCategorie]);
+const stage = new Stage([newAmount, newCategorie, newIncome]);
 bot.use(session());
 bot.use(stage.middleware());
 
@@ -155,11 +200,7 @@ bot.command('addCategorie', async ({ reply, scene }) => {
 }
 );
 
-bot.command('add', async (ctx) => {
-    let userId = ctx.message.from.id;
-    let chatId = ctx.message.chat.id;
-    addChatIfNotExist(chatId);
-
+async function getCategoriesInKeyboard(userId: number, kindOfKeyboard: string) {
     let result: QueryResult = await executeQuery(queries.GET_CATEGORIES, [userId]);
     if (result.rowCount > 0) {
         const options = {
@@ -173,7 +214,7 @@ bot.command('add', async (ctx) => {
         let columnCount = 0;
         for (let i = 0; i < result.rows.length; i++) {
             ++columnCount;
-            let actionName:string = result.rows[i].id + "-" + result.rows[i].name
+            let actionName: string = result.rows[i].id + "-" + result.rows[i].name + "-" + kindOfKeyboard;
             let string = result.rows[i].name + ":action" + actionName;
 
             row.push(string)
@@ -190,11 +231,25 @@ bot.command('add', async (ctx) => {
                 .add(element)
 
         })
-        ctx.reply('Select the amounts categorie', keyboard.draw());
+        return keyboard;
     }
-    else {
-        ctx.replyWithHTML('<b>Currently there are no open todos</b>');
-    }
+}
+
+bot.command('addAmount', async (ctx) => {
+    let userId = ctx.message.from.id;
+    let chatId = ctx.message.chat.id;
+    addChatIfNotExist(chatId);
+    let keyboard = await getCategoriesInKeyboard(userId, "new_amount");
+    ctx.reply('Select the amounts categorie', keyboard.draw());
+}
+);
+
+bot.command('addIncome', async (ctx) => {
+    let userId = ctx.message.from.id;
+    let chatId = ctx.message.chat.id;
+    addChatIfNotExist(chatId);
+    let keyboard = await getCategoriesInKeyboard(userId, "new_income");
+    ctx.reply('Select the incomes categorie', keyboard.draw());
 }
 );
 
@@ -207,20 +262,61 @@ bot.action(regex, async (ctx) => {
     ctx.editMessageReplyMarkup({});
 
     await ctx.scene.leave();
-    await ctx.scene.enter('new_amount');
+    await ctx.scene.enter([actionData.replace("action", "").split("-")[2]].toString());
 
-} );
+});
 
 bot.command('accountBalance', async (ctx) => {
- 
+
     try {
-        let result: QueryResult = await executeQuery(queries.GET_ACCOUNT_BALANCE, [ctx.update.message.from.id]);
-        ctx.replyWithHTML(`Your actual account balance is <b>${result.rows[0].sum}€</b>`);
+        let resultIncome: QueryResult = await executeQuery(queries.GET_INCOME_AMOUNT, [ctx.update.message.from.id]);
+        let resultSpend: QueryResult = await executeQuery(queries.GET_SPEND_AMOUNT, [ctx.update.message.from.id]);
+        let income: number = resultIncome.rows[0].sum == null ? 0 : resultIncome.rows[0].sum;
+        let spend: number = resultSpend.rows[0].sum == null ? 0 : resultSpend.rows[0].sum;
+
+        ctx.replyWithHTML(`Account balance: \n` +
+            `Income: <b>${income}€</b> \n` +
+            `Spend: <b>${spend}€</b> \n` +
+            `Sum: <b>${income - spend}€</b>`);
     } catch (err) {
         logger.error(err);
         ctx.replyWithHTML(`Error while checking the account balance `);
     }
-   
+
+}
+);
+
+bot.command('accountBalanceDetails', async (ctx) => {
+
+    try {
+        let queryResult: QueryResult = await executeQuery(queries.ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id]);
+        let result: AccountBalanceDetails[] = queryResult.rows;
+
+        let text: string = 'Account balance details:\n';
+        let actualCategorieId: number = result[0].id;
+        text += `<b>${result[0].categoriename}</b>`
+        let sumOfCategorie: number = 0;
+        //fix order here for sum
+        result.forEach((element: AccountBalanceDetails) => {
+            let amount: number = element.ispositive == true ? element.amount : parseInt("-" + element.amount);
+            if (element.id > actualCategorieId) {
+                text += `\nSum of categorie ${sumOfCategorie}`;
+                sumOfCategorie = 0;
+                text += "\n---------------------------------------------";
+                text += `\n <b>${element.categoriename}</b>`;
+                actualCategorieId = element.id;
+            }
+
+            text += `\n Reason: ${element.name}  <b>${amount}€</b>`
+            sumOfCategorie += amount;
+
+        });
+        ctx.replyWithHTML(text);
+    } catch (err) {
+        logger.error(err);
+        ctx.replyWithHTML(`Error while checking the account balance details`);
+    }
+
 }
 );
 
