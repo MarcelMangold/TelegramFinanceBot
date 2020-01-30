@@ -127,10 +127,10 @@ const newIncome = new WizardScene(
         try {
             await addChatAndUserIfNotExist(chatId, userId);
             //name,  amount, isPositive, notice, categorieId, userID, chatId
-            await executeQuery(queries.INSERT_TRANSACTION, [ctx.message.text, parseInt(ctx.wizard.state.amount), true, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId]);
+            await executeQuery(queries.INSERT_TRANSACTION, [ctx.message.text, parseFloat(ctx.wizard.state.amount.replace(',','.')), true, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId]);
             ctx.replyWithHTML(
                 `The income of <b>${
-                parseInt(ctx.wizard.state.amount)
+                ctx.wizard.state.amount
                 }€</b> were booked to the account`
             );
         }
@@ -169,10 +169,10 @@ const newAmount = new WizardScene(
         try {
             await addChatAndUserIfNotExist(chatId, userId);
             //name,  amount, isPositive, notice, categorieId, userID, chatId
-            await executeQuery(queries.INSERT_TRANSACTION, [ctx.message.text, parseInt(ctx.wizard.state.amount), false, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId]);
+            await executeQuery(queries.INSERT_TRANSACTION, [ctx.message.text, parseFloat(ctx.wizard.state.amount.replace(',','.')), false, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId]);
             ctx.replyWithHTML(
                 `The amount of <b>${
-                parseInt(ctx.wizard.state.amount)
+                ctx.wizard.state.amount
                 }€</b> were booked to the account`
             );
         }

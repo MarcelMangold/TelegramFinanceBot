@@ -162,11 +162,11 @@ var newIncome = new WizardScene("new_income", function (ctx) {
             case 2:
                 _a.sent();
                 //name,  amount, isPositive, notice, categorieId, userID, chatId
-                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.INSERT_TRANSACTION, [ctx.message.text, parseInt(ctx.wizard.state.amount), true, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId])];
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.INSERT_TRANSACTION, [ctx.message.text, parseFloat(ctx.wizard.state.amount.replace(',', '.')), true, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId])];
             case 3:
                 //name,  amount, isPositive, notice, categorieId, userID, chatId
                 _a.sent();
-                ctx.replyWithHTML("The income of <b>" + parseInt(ctx.wizard.state.amount) + "\u20AC</b> were booked to the account");
+                ctx.replyWithHTML("The income of <b>" + ctx.wizard.state.amount + "\u20AC</b> were booked to the account");
                 return [3 /*break*/, 5];
             case 4:
                 err_2 = _a.sent();
@@ -207,11 +207,11 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
             case 2:
                 _a.sent();
                 //name,  amount, isPositive, notice, categorieId, userID, chatId
-                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.INSERT_TRANSACTION, [ctx.message.text, parseInt(ctx.wizard.state.amount), false, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId])];
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.INSERT_TRANSACTION, [ctx.message.text, parseFloat(ctx.wizard.state.amount.replace(',', '.')), false, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId])];
             case 3:
                 //name,  amount, isPositive, notice, categorieId, userID, chatId
                 _a.sent();
-                ctx.replyWithHTML("The amount of <b>" + parseInt(ctx.wizard.state.amount) + "\u20AC</b> were booked to the account");
+                ctx.replyWithHTML("The amount of <b>" + ctx.wizard.state.amount + "\u20AC</b> were booked to the account");
                 return [3 /*break*/, 5];
             case 4:
                 err_3 = _a.sent();
@@ -376,6 +376,7 @@ bot.command('accountBalanceDetails', function (ctx) { return __awaiter(void 0, v
                 actualCategorieId_1 = result[0].id;
                 text_1 += "<b>" + result[0].categoriename + "</b>";
                 sumOfCategorie_1 = 0;
+                //fix order here for sum
                 result.forEach(function (element) {
                     var amount = element.ispositive == true ? element.amount : parseInt("-" + element.amount);
                     if (element.id > actualCategorieId_1) {
