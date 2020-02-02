@@ -40,7 +40,7 @@ bot.catch((err, ctx) => {
     logger.error(`Ooops, ecountered an error for ${ctx.updateType}`, err)
 })
 
-bot.command('showCategories', async (ctx) => {
+bot.command('show_categories', async (ctx) => {
     let chatId = ctx.update.message.chat.id;
     let userID = ctx.update.message.from.id;
 
@@ -194,7 +194,7 @@ bot.use(session());
 bot.use(stage.middleware());
 
 
-bot.command('addCategorie', async ({ reply, scene }) => {
+bot.command('add_categorie', async ({ reply, scene }) => {
     await scene.leave()
     await scene.enter('new_categorie')
 }
@@ -235,7 +235,7 @@ async function getCategoriesInKeyboard(userId: number, kindOfKeyboard: string) {
     }
 }
 
-bot.command('addAmount', async (ctx) => {
+bot.command('new_amount', async (ctx) => {
     let userId = ctx.message.from.id;
     let chatId = ctx.message.chat.id;
     addChatIfNotExist(chatId);
@@ -244,7 +244,7 @@ bot.command('addAmount', async (ctx) => {
 }
 );
 
-bot.command('addIncome', async (ctx) => {
+bot.command('new_income', async (ctx) => {
     let userId = ctx.message.from.id;
     let chatId = ctx.message.chat.id;
     addChatIfNotExist(chatId);
@@ -266,7 +266,7 @@ bot.action(regex, async (ctx) => {
 
 });
 
-bot.command('accountBalance', async (ctx) => {
+bot.command('account_balance', async (ctx) => {
 
     try {
         let resultIncome: QueryResult = await executeQuery(queries.GET_INCOME_AMOUNT, [ctx.update.message.from.id]);
@@ -286,29 +286,29 @@ bot.command('accountBalance', async (ctx) => {
 }
 );
 
-bot.command('accountBalanceDetails', async (ctx) => {
+bot.command('account_balance_details', async (ctx) => {
 
     try {
         let queryResult: QueryResult = await executeQuery(queries.ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id]);
         let result: AccountBalanceDetails[] = queryResult.rows;
 
-        let text: string = 'Account balance details:\n';
+        let text: string = '<b>Account balance details:</b>\n\n';
         let actualCategorieId: number = result[0].id;
         text += `<b>${result[0].categoriename}</b>`
         let sumOfCategorie: number = 0;
         //fix order here for sum
         result.forEach((element: AccountBalanceDetails) => {
-            let amount: number = element.ispositive == true ? element.amount : parseInt("-" + element.amount);
+            let amount: number = element.amount;
             if (element.id > actualCategorieId) {
-                text += `\nSum of categorie ${sumOfCategorie}`;
+                text += `\n<b>Sum of categorie ${sumOfCategorie}</b>`;
                 sumOfCategorie = 0;
-                text += "\n---------------------------------------------";
-                text += `\n <b>${element.categoriename}</b>`;
+                text += "\n\n---------------------------------------------";
+                text += `\n\n <b>${element.categoriename}</b>`;
                 actualCategorieId = element.id;
             }
 
             text += `\n Reason: ${element.name}  <b>${amount}€</b>`
-            sumOfCategorie += amount;
+            sumOfCategorie += +amount;
 
         });
         ctx.replyWithHTML(text);

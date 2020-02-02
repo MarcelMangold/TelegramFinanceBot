@@ -61,7 +61,7 @@ bot.start(function (ctx) {
 bot["catch"](function (err, ctx) {
     logger_1.logger.error("Ooops, ecountered an error for " + ctx.updateType, err);
 });
-bot.command('showCategories', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+bot.command('show_categories', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var chatId, userID, result, htmlText, i;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -225,7 +225,7 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
 var stage = new Stage([newAmount, newCategorie, newIncome]);
 bot.use(session());
 bot.use(stage.middleware());
-bot.command('addCategorie', function (_a) {
+bot.command('add_categorie', function (_a) {
     var reply = _a.reply, scene = _a.scene;
     return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_b) {
@@ -283,7 +283,7 @@ function getCategoriesInKeyboard(userId, kindOfKeyboard) {
         });
     });
 }
-bot.command('addAmount', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+bot.command('new_amount', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var userId, chatId, keyboard;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -299,7 +299,7 @@ bot.command('addAmount', function (ctx) { return __awaiter(void 0, void 0, void 
         }
     });
 }); });
-bot.command('addIncome', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+bot.command('new_income', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var userId, chatId, keyboard;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -334,7 +334,7 @@ bot.action(regex, function (ctx) { return __awaiter(void 0, void 0, void 0, func
         }
     });
 }); });
-bot.command('accountBalance', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+bot.command('account_balance', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var resultIncome, resultSpend, income, spend, err_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -362,7 +362,7 @@ bot.command('accountBalance', function (ctx) { return __awaiter(void 0, void 0, 
         }
     });
 }); });
-bot.command('accountBalanceDetails', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+bot.command('account_balance_details', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var queryResult, result, text_1, actualCategorieId_1, sumOfCategorie_1, err_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -372,22 +372,22 @@ bot.command('accountBalanceDetails', function (ctx) { return __awaiter(void 0, v
             case 1:
                 queryResult = _a.sent();
                 result = queryResult.rows;
-                text_1 = 'Account balance details:\n';
+                text_1 = '<b>Account balance details:</b>\n\n';
                 actualCategorieId_1 = result[0].id;
                 text_1 += "<b>" + result[0].categoriename + "</b>";
                 sumOfCategorie_1 = 0;
                 //fix order here for sum
                 result.forEach(function (element) {
-                    var amount = element.ispositive == true ? element.amount : parseInt("-" + element.amount);
+                    var amount = element.amount;
                     if (element.id > actualCategorieId_1) {
-                        text_1 += "\nSum of categorie " + sumOfCategorie_1;
+                        text_1 += "\n<b>Sum of categorie " + sumOfCategorie_1 + "</b>";
                         sumOfCategorie_1 = 0;
-                        text_1 += "\n---------------------------------------------";
-                        text_1 += "\n <b>" + element.categoriename + "</b>";
+                        text_1 += "\n\n---------------------------------------------";
+                        text_1 += "\n\n <b>" + element.categoriename + "</b>";
                         actualCategorieId_1 = element.id;
                     }
                     text_1 += "\n Reason: " + element.name + "  <b>" + amount + "\u20AC</b>";
-                    sumOfCategorie_1 += amount;
+                    sumOfCategorie_1 += +amount;
                 });
                 ctx.replyWithHTML(text_1);
                 return [3 /*break*/, 3];
