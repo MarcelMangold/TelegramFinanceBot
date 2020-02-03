@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var _a = require('./config/config'), databaseConnection = _a.databaseConnection, botToken = _a.botToken;
+var botToken = require('./config/config').botToken;
 var database_adapter_1 = require("./helpers/database-adapter");
 var queries_1 = require("./helpers/queries");
 var logger_1 = require("./helpers/logger");
@@ -100,6 +100,20 @@ bot.command('show_categories', function (ctx) { return __awaiter(void 0, void 0,
     }
     ctx.replyWithHTML(htmlText);
 }) */
+var deleteCategorie = new WizardScene("delete_categorie", function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var actionData;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                actionData = ctx.update.callback_query.data;
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.DELETE_CATEGOIRE, [actionData.replace("action", "").split("-")[0]])];
+            case 1:
+                _a.sent();
+                ctx.replyWithHTML("The categorie <b>" + actionData.replace("delete_categorie", "").split("-")[1] + "</b> is deleted");
+                return [2 /*return*/, ctx.scene.leave()];
+        }
+    });
+}); });
 var newCategorie = new WizardScene("new_categorie", function (ctx) {
     ctx.reply("Please type the categorie you want to create");
     return ctx.wizard.next();
@@ -222,7 +236,7 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
         }
     });
 }); });
-var stage = new Stage([newAmount, newCategorie, newIncome]);
+var stage = new Stage([newAmount, newCategorie, newIncome, deleteCategorie]);
 bot.use(session());
 bot.use(stage.middleware());
 bot.command('add_categorie', function (_a) {
@@ -283,6 +297,22 @@ function getCategoriesInKeyboard(userId, kindOfKeyboard) {
         });
     });
 }
+bot.command('delete_categorie', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var userID, chatId, keyboard;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                userID = ctx.message.from.id;
+                chatId = ctx.message.chat.id;
+                addChatAndUserIfNotExist(chatId, userID);
+                return [4 /*yield*/, getCategoriesInKeyboard(userID, "delete_categorie")];
+            case 1:
+                keyboard = _a.sent();
+                ctx.reply('Select the categorie which you want to delete', keyboard.draw());
+                return [2 /*return*/];
+        }
+    });
+}); });
 bot.command('new_amount', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var userId, chatId, keyboard;
     return __generator(this, function (_a) {

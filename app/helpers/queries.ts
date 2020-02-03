@@ -10,7 +10,8 @@ const queries = {
     'ADD_CATEGORIE': 'INSERT INTO categorie (name, userId) VALUES ($1, $2)',
     'SHOW_CATEGORIES': 'SELECT * FROM categorie WHERE userId = $1;',
     'ACCOUNT_BALANCE_DETAILS':  'SELECT c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timeStamp" FROM  categorie c ' +
-                                'INNER JOIN TRANSACTION t ON c.id= t.categorieId  WHERE t.userId = $1 ORDER BY c.id ASC, t."timeStamp" ASC ;'
+                                'INNER JOIN TRANSACTION t ON c.id= t.categorieId  WHERE t.userId = $1 ORDER BY c.id ASC, t."timeStamp" ASC ;',
+    'DELETE_CATEGOIRE': 'DELETE FROM categorie WHERE id=$1'
 }
 
 

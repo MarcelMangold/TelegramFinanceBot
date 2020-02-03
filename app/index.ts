@@ -1,5 +1,5 @@
 
-const { databaseConnection, botToken } = require('./config/config');
+const { botToken } = require('./config/config');
 import { executeQuery } from './helpers/database-adapter';
 import { queries } from './helpers/queries';
 import { logger } from './helpers/logger';
@@ -73,7 +73,16 @@ bot.command('show_categories', async (ctx) => {
 }) */
 
 
+const deleteCategorie = new WizardScene(
+    "delete_categorie",
+    async ctx => {
+        let actionData: string = ctx.update.callback_query.data;
+        await executeQuery(queries.DELETE_CATEGOIRE, [actionData.replace("action", "").split("-")[0]]);
+        ctx.replyWithHTML(`The categorie <b>${actionData.replace("delete_categorie", "").split("-")[1]}</b> is deleted`);
+        return ctx.scene.leave();
+    }
 
+);
 
 
 const newCategorie = new WizardScene(
@@ -189,7 +198,7 @@ const newAmount = new WizardScene(
 );
 
 
-const stage = new Stage([newAmount, newCategorie, newIncome]);
+const stage = new Stage([newAmount, newCategorie, newIncome, deleteCategorie]);
 bot.use(session());
 bot.use(stage.middleware());
 
@@ -234,6 +243,14 @@ async function getCategoriesInKeyboard(userId: number, kindOfKeyboard: string) {
         return keyboard;
     }
 }
+
+bot.command('delete_categorie', async (ctx) => {
+    let userID = ctx.message.from.id;
+    let chatId = ctx.message.chat.id;
+    addChatAndUserIfNotExist(chatId, userID);
+    let keyboard = await getCategoriesInKeyboard(userID, "delete_categorie");
+    ctx.reply('Select the categorie which you want to delete', keyboard.draw());
+})
 
 bot.command('new_amount', async (ctx) => {
     let userId = ctx.message.from.id;
