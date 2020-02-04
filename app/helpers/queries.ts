@@ -11,7 +11,11 @@ const queries = {
     'SHOW_CATEGORIES': 'SELECT * FROM categorie WHERE userId = $1;',
     'ACCOUNT_BALANCE_DETAILS':  'SELECT c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timeStamp" FROM  categorie c ' +
                                 'INNER JOIN TRANSACTION t ON c.id= t.categorieId  WHERE t.userId = $1 ORDER BY c.id ASC, t."timeStamp" ASC ;',
-    'DELETE_CATEGOIRE': 'DELETE FROM categorie WHERE id=$1'
+    'DELETE_CATEGOIRE': 'DELETE FROM categorie WHERE id=$1',
+    'CURRENT_MONTHLY_ACCOUNT_BALANCE_DETAILS': 'SELECT c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timeStamp" FROM  categorie c ' +
+    'INNER JOIN TRANSACTION t ON c.id= t.categorieId  WHERE t.userId = $1 AND extract (month FROM "timeStamp") = extract (month FROM CURRENT_DATE) ORDER BY c.id ASC, t."timeStamp" ASC ;',
+    'MONTHLY_ACCOUNT_BALANCE_DETAILS' : 'SELECT c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timeStamp" FROM  categorie c ' +
+    'INNER JOIN TRANSACTION t ON c.id= t.categorieId  WHERE t.userId = $1 AND extract (year FROM "timeStamp") = extract (year FROM CURRENT_DATE) ORDER BY t."timeStamp" ASC, c.id ASC ;'
 }
 
 

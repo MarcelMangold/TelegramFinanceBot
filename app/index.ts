@@ -136,7 +136,7 @@ const newIncome = new WizardScene(
         try {
             await addChatAndUserIfNotExist(chatId, userId);
             //name,  amount, isPositive, notice, categorieId, userID, chatId
-            await executeQuery(queries.INSERT_TRANSACTION, [ctx.message.text, parseFloat(ctx.wizard.state.amount.replace(',','.')), true, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId]);
+            await executeQuery(queries.INSERT_TRANSACTION, [ctx.message.text, parseFloat(ctx.wizard.state.amount.replace(',', '.')), true, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId]);
             ctx.replyWithHTML(
                 `The income of <b>${
                 ctx.wizard.state.amount
@@ -178,7 +178,7 @@ const newAmount = new WizardScene(
         try {
             await addChatAndUserIfNotExist(chatId, userId);
             //name,  amount, isPositive, notice, categorieId, userID, chatId
-            await executeQuery(queries.INSERT_TRANSACTION, [ctx.message.text, parseFloat(ctx.wizard.state.amount.replace(',','.')), false, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId]);
+            await executeQuery(queries.INSERT_TRANSACTION, [ctx.message.text, parseFloat(ctx.wizard.state.amount.replace(',', '.')), false, "notice", parseInt(ctx.wizard.state.categorie), userId, chatId]);
             ctx.replyWithHTML(
                 `The amount of <b>${
                 ctx.wizard.state.amount
@@ -203,7 +203,7 @@ bot.use(session());
 bot.use(stage.middleware());
 
 
-bot.command('add_categorie', async ({ reply, scene }) => {
+bot.command('new_categorie', async ({ reply, scene }) => {
     await scene.leave()
     await scene.enter('new_categorie')
 }
@@ -307,28 +307,13 @@ bot.command('account_balance_details', async (ctx) => {
 
     try {
         let queryResult: QueryResult = await executeQuery(queries.ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id]);
-        let result: AccountBalanceDetails[] = queryResult.rows;
-
-        let text: string = '<b>Account balance details:</b>\n\n';
-        let actualCategorieId: number = result[0].id;
-        text += `<b>${result[0].categoriename}</b>`
-        let sumOfCategorie: number = 0;
-        //fix order here for sum
-        result.forEach((element: AccountBalanceDetails) => {
-            let amount: number = element.amount;
-            if (element.id > actualCategorieId) {
-                text += `\n<b>Sum of categorie ${sumOfCategorie}</b>`;
-                sumOfCategorie = 0;
-                text += "\n\n---------------------------------------------";
-                text += `\n\n <b>${element.categoriename}</b>`;
-                actualCategorieId = element.id;
-            }
-
-            text += `\n Reason: ${element.name}  <b>${amount}€</b>`
-            sumOfCategorie += +amount;
-
-        });
-        ctx.replyWithHTML(text);
+        if (queryResult.rowCount > 0) {
+            let text: string = '<b>Account balance details:</b>\n\n';
+            ctx.replyWithHTML(createBalanceDetailsText(queryResult.rows, text));
+        }
+        else {
+            ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"')
+        }
     } catch (err) {
         logger.error(err);
         ctx.replyWithHTML(`Error while checking the account balance details`);
@@ -336,6 +321,81 @@ bot.command('account_balance_details', async (ctx) => {
 
 }
 );
+
+bot.command('current_monthly_account_balance_details', async (ctx) => {
+
+    try {
+        let queryResult: QueryResult = await executeQuery(queries.CURRENT_MONTHLY_ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id]);
+        if (queryResult.rowCount > 0) {
+            let text: string = '<b>Current account balance details:</b>\n\n';
+            ctx.replyWithHTML(createBalanceDetailsText(queryResult.rows, text));
+        }
+        else {
+            ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"')
+        }
+    } catch (err) {
+        logger.error(err);
+        ctx.replyWithHTML(`Error while checking the account balance details`);
+    }
+});
+
+bot.command('monthly_account_balance_details', async (ctx) => {
+
+    try {
+        let queryResult: QueryResult = await executeQuery(queries.MONTHLY_ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id]);
+        if (queryResult.rowCount > 0) {
+            let text: string = '<b> Montly account balance details </b>\n\n';
+            let result: AccountBalanceDetails[] = queryResult.rows;
+            let actualMonth:number = result[0].timeStamp.getMonth();
+            let actualStartMonthIndex:number = 0;
+            for (const index in result) {
+                if(parseInt(index) == result.length-1)
+                {
+                    text += createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index)), text);
+                    console.log(result.slice(actualStartMonthIndex, parseInt(index)));
+                }
+                else if(result[index].timeStamp.getMonth() > actualMonth)
+                {
+                   
+                    text += createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index)-1), text);
+                    console.log(result.slice(actualStartMonthIndex, parseInt(index)-1), text);
+                    actualStartMonthIndex = parseInt(index);
+                    actualMonth = result[index].timeStamp.getMonth();
+                    text += "++++++++++++++++++++++";
+                }
+            }
+
+            ctx.replyWithHTML(text);
+        }
+        else {
+            ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"')
+        }
+    } catch (err) {
+        logger.error(err);
+        ctx.replyWithHTML(`Error while checking the account balance details`);
+    }
+});
+
+function createBalanceDetailsText(result: AccountBalanceDetails[], text: string): string {
+    let actualCategorieId: number = result[0].id;
+    text += `<b>${result[0].categoriename}</b>`
+    let sumOfCategorie: number = 0;
+    //fix order here for sum
+    result.forEach((element: AccountBalanceDetails) => {
+        let amount: number = element.amount;
+        if (element.id > actualCategorieId) {
+            text += `\n<b>Sum of categorie ${sumOfCategorie}€</b>`;
+            sumOfCategorie = 0;
+            text += "\n\n---------------------------------------------";
+            text += `\n\n <b>${element.categoriename}</b>`;
+            actualCategorieId = element.id;
+        }
+        let options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
+        text += `\n Reason: ${element.name}  <b>${amount}€</b>  (${element.timeStamp.toLocaleDateString('de-DE', options)})`
+        sumOfCategorie += +amount;
+    })
+    return text;
+}
 
 bot.launch()
 

@@ -239,7 +239,7 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
 var stage = new Stage([newAmount, newCategorie, newIncome, deleteCategorie]);
 bot.use(session());
 bot.use(stage.middleware());
-bot.command('add_categorie', function (_a) {
+bot.command('new_categorie', function (_a) {
     var reply = _a.reply, scene = _a.scene;
     return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_b) {
@@ -393,7 +393,7 @@ bot.command('account_balance', function (ctx) { return __awaiter(void 0, void 0,
     });
 }); });
 bot.command('account_balance_details', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var queryResult, result, text_1, actualCategorieId_1, sumOfCategorie_1, err_5;
+    var queryResult, text, err_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -401,25 +401,13 @@ bot.command('account_balance_details', function (ctx) { return __awaiter(void 0,
                 return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id])];
             case 1:
                 queryResult = _a.sent();
-                result = queryResult.rows;
-                text_1 = '<b>Account balance details:</b>\n\n';
-                actualCategorieId_1 = result[0].id;
-                text_1 += "<b>" + result[0].categoriename + "</b>";
-                sumOfCategorie_1 = 0;
-                //fix order here for sum
-                result.forEach(function (element) {
-                    var amount = element.amount;
-                    if (element.id > actualCategorieId_1) {
-                        text_1 += "\n<b>Sum of categorie " + sumOfCategorie_1 + "</b>";
-                        sumOfCategorie_1 = 0;
-                        text_1 += "\n\n---------------------------------------------";
-                        text_1 += "\n\n <b>" + element.categoriename + "</b>";
-                        actualCategorieId_1 = element.id;
-                    }
-                    text_1 += "\n Reason: " + element.name + "  <b>" + amount + "\u20AC</b>";
-                    sumOfCategorie_1 += +amount;
-                });
-                ctx.replyWithHTML(text_1);
+                if (queryResult.rowCount > 0) {
+                    text = '<b>Account balance details:</b>\n\n';
+                    ctx.replyWithHTML(createBalanceDetailsText(queryResult.rows, text));
+                }
+                else {
+                    ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"');
+                }
                 return [3 /*break*/, 3];
             case 2:
                 err_5 = _a.sent();
@@ -430,6 +418,94 @@ bot.command('account_balance_details', function (ctx) { return __awaiter(void 0,
         }
     });
 }); });
+bot.command('current_monthly_account_balance_details', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var queryResult, text, err_6;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.CURRENT_MONTHLY_ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id])];
+            case 1:
+                queryResult = _a.sent();
+                if (queryResult.rowCount > 0) {
+                    text = '<b>Current account balance details:</b>\n\n';
+                    ctx.replyWithHTML(createBalanceDetailsText(queryResult.rows, text));
+                }
+                else {
+                    ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"');
+                }
+                return [3 /*break*/, 3];
+            case 2:
+                err_6 = _a.sent();
+                logger_1.logger.error(err_6);
+                ctx.replyWithHTML("Error while checking the account balance details");
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
+bot.command('t', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var queryResult, text, result, actualMonth, actualStartMonthIndex, index, err_7;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.MONTHLY_ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id])];
+            case 1:
+                queryResult = _a.sent();
+                if (queryResult.rowCount > 0) {
+                    text = '<b> Montly account balance details </b>\n\n';
+                    result = queryResult.rows;
+                    actualMonth = result[0].timeStamp.getMonth();
+                    actualStartMonthIndex = 0;
+                    for (index in result) {
+                        if (parseInt(index) == result.length - 1) {
+                            text += createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index)), text);
+                            console.log(result.slice(actualStartMonthIndex, parseInt(index)));
+                        }
+                        else if (result[index].timeStamp.getMonth() > actualMonth) {
+                            text += createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index) - 1), text);
+                            console.log(result.slice(actualStartMonthIndex, parseInt(index) - 1), text);
+                            actualStartMonthIndex = parseInt(index);
+                            actualMonth = result[index].timeStamp.getMonth();
+                            text += "++++++++++++++++++++++";
+                        }
+                    }
+                    ctx.replyWithHTML(text);
+                }
+                else {
+                    ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"');
+                }
+                return [3 /*break*/, 3];
+            case 2:
+                err_7 = _a.sent();
+                logger_1.logger.error(err_7);
+                ctx.replyWithHTML("Error while checking the account balance details");
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
+function createBalanceDetailsText(result, text) {
+    var actualCategorieId = result[0].id;
+    text += "<b>" + result[0].categoriename + "</b>";
+    var sumOfCategorie = 0;
+    //fix order here for sum
+    result.forEach(function (element) {
+        var amount = element.amount;
+        if (element.id > actualCategorieId) {
+            text += "\n<b>Sum of categorie " + sumOfCategorie + "\u20AC</b>";
+            sumOfCategorie = 0;
+            text += "\n\n---------------------------------------------";
+            text += "\n\n <b>" + element.categoriename + "</b>";
+            actualCategorieId = element.id;
+        }
+        var options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
+        text += "\n Reason: " + element.name + "  <b>" + amount + "\u20AC</b>  (" + element.timeStamp.toLocaleDateString('de-DE', options) + ")";
+        sumOfCategorie += +amount;
+    });
+    return text;
+}
 bot.launch();
 function addChatAndUserIfNotExist(chatId, userId) {
     return __awaiter(this, void 0, void 0, function () {
