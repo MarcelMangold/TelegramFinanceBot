@@ -322,7 +322,7 @@ bot.command('account_balance_details', async (ctx) => {
 }
 );
 
-bot.command('current_monthly_account_balance_details', async (ctx) => {
+bot.command('curr_monthly_acc_balance_details', async (ctx) => {
 
     try {
         let queryResult: QueryResult = await executeQuery(queries.CURRENT_MONTHLY_ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id]);
@@ -344,24 +344,21 @@ bot.command('monthly_account_balance_details', async (ctx) => {
     try {
         let queryResult: QueryResult = await executeQuery(queries.MONTHLY_ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id]);
         if (queryResult.rowCount > 0) {
-            let text: string = '<b> Montly account balance details </b>\n\n';
+            let text: string = '<b> Montly account balance details </b>';
             let result: AccountBalanceDetails[] = queryResult.rows;
-            let actualMonth:number = result[0].timeStamp.getMonth();
-            let actualStartMonthIndex:number = 0;
+            let actualMonth: number = result[0].timeStamp.getMonth();
+            let actualStartMonthIndex: number = 0;
+            let options = { month: 'long' };
             for (const index in result) {
-                if(parseInt(index) == result.length-1)
-                {
-                    text += createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index)), text);
-                    console.log(result.slice(actualStartMonthIndex, parseInt(index)));
+                if (parseInt(index) == result.length-1) {
+                    text += `\n\n<b>++++ Costs in ${result[index].timeStamp.toLocaleDateString('en', options)} ++++</b>\n`
+                    text = createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index+1)), text);
                 }
-                else if(result[index].timeStamp.getMonth() > actualMonth)
-                {
-                   
-                    text += createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index)-1), text);
-                    console.log(result.slice(actualStartMonthIndex, parseInt(index)-1), text);
+                else if (result[index].timeStamp.getMonth() > actualMonth) {
+                    text += `\n\n<b>++++ Costs in ${result[parseInt(index) - 1].timeStamp.toLocaleDateString('en', options)} ++++</b>\n`
+                    text = createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index) - 1), text);
                     actualStartMonthIndex = parseInt(index);
                     actualMonth = result[index].timeStamp.getMonth();
-                    text += "++++++++++++++++++++++";
                 }
             }
 
@@ -386,8 +383,8 @@ function createBalanceDetailsText(result: AccountBalanceDetails[], text: string)
         if (element.id > actualCategorieId) {
             text += `\n<b>Sum of categorie ${sumOfCategorie}€</b>`;
             sumOfCategorie = 0;
-            text += "\n\n---------------------------------------------";
-            text += `\n\n <b>${element.categoriename}</b>`;
+            text += "\n---------------------------------------------";
+            text += `\n <b>${element.categoriename}</b>`;
             actualCategorieId = element.id;
         }
         let options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };

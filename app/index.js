@@ -418,7 +418,7 @@ bot.command('account_balance_details', function (ctx) { return __awaiter(void 0,
         }
     });
 }); });
-bot.command('current_monthly_account_balance_details', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+bot.command('curr_monthly_acc_balance_details', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var queryResult, text, err_6;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -444,8 +444,8 @@ bot.command('current_monthly_account_balance_details', function (ctx) { return _
         }
     });
 }); });
-bot.command('t', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var queryResult, text, result, actualMonth, actualStartMonthIndex, index, err_7;
+bot.command('monthly_account_balance_details', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var queryResult, text, result, actualMonth, actualStartMonthIndex, options, index, err_7;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -454,21 +454,21 @@ bot.command('t', function (ctx) { return __awaiter(void 0, void 0, void 0, funct
             case 1:
                 queryResult = _a.sent();
                 if (queryResult.rowCount > 0) {
-                    text = '<b> Montly account balance details </b>\n\n';
+                    text = '<b> Montly account balance details </b>';
                     result = queryResult.rows;
                     actualMonth = result[0].timeStamp.getMonth();
                     actualStartMonthIndex = 0;
+                    options = { month: 'long' };
                     for (index in result) {
                         if (parseInt(index) == result.length - 1) {
-                            text += createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index)), text);
-                            console.log(result.slice(actualStartMonthIndex, parseInt(index)));
+                            text += "\n\n<b>++++ Costs in " + result[index].timeStamp.toLocaleDateString('en', options) + " ++++</b>\n";
+                            text = createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index + 1)), text);
                         }
                         else if (result[index].timeStamp.getMonth() > actualMonth) {
-                            text += createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index) - 1), text);
-                            console.log(result.slice(actualStartMonthIndex, parseInt(index) - 1), text);
+                            text += "\n\n<b>++++ Costs in " + result[parseInt(index) - 1].timeStamp.toLocaleDateString('en', options) + " ++++</b>\n";
+                            text = createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index) - 1), text);
                             actualStartMonthIndex = parseInt(index);
                             actualMonth = result[index].timeStamp.getMonth();
-                            text += "++++++++++++++++++++++";
                         }
                     }
                     ctx.replyWithHTML(text);
@@ -496,8 +496,8 @@ function createBalanceDetailsText(result, text) {
         if (element.id > actualCategorieId) {
             text += "\n<b>Sum of categorie " + sumOfCategorie + "\u20AC</b>";
             sumOfCategorie = 0;
-            text += "\n\n---------------------------------------------";
-            text += "\n\n <b>" + element.categoriename + "</b>";
+            text += "\n---------------------------------------------";
+            text += "\n <b>" + element.categoriename + "</b>";
             actualCategorieId = element.id;
         }
         var options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
