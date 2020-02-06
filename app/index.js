@@ -486,15 +486,45 @@ bot.command('monthly_account_balance_details', function (ctx) { return __awaiter
         }
     });
 }); });
+bot.command('daily_account_balance_details', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var queryResult, result, options, text, err_8;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.DAILY_ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id])];
+            case 1:
+                queryResult = _a.sent();
+                if (queryResult.rowCount > 0) {
+                    result = queryResult.rows;
+                    options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
+                    text = "<b> Daily account balance details (" + queryResult.rows[0].timeStamp.toLocaleDateString('en', options) + ")</b>\n\n";
+                    ctx.replyWithHTML(createBalanceDetailsText(result, text));
+                }
+                else {
+                    ctx.replyWithHTML('There are no entries from today. Please use the function "new_amount" or "new_income"');
+                }
+                return [3 /*break*/, 3];
+            case 2:
+                err_8 = _a.sent();
+                logger_1.logger.error(err_8);
+                ctx.replyWithHTML("Error while checking the account balance details");
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
 function createBalanceDetailsText(result, text) {
     var actualCategorieId = result[0].id;
     text += "<b>" + result[0].categoriename + "</b>";
     var sumOfCategorie = 0;
+    var totalSum = 0;
     //fix order here for sum
     result.forEach(function (element) {
         var amount = element.amount;
         if (element.id > actualCategorieId) {
-            text += "\n<b>Sum of categorie " + sumOfCategorie + "\u20AC</b>";
+            text += "\n<b>Sum of categorie " + sumOfCategorie.toFixed(2) + "\u20AC</b>";
+            totalSum += +sumOfCategorie;
             sumOfCategorie = 0;
             text += "\n---------------------------------------------";
             text += "\n <b>" + element.categoriename + "</b>";
@@ -503,6 +533,13 @@ function createBalanceDetailsText(result, text) {
         var options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
         text += "\n Reason: " + element.name + "  <b>" + amount + "\u20AC</b>  (" + element.timeStamp.toLocaleDateString('de-DE', options) + ")";
         sumOfCategorie += +amount;
+        if (result[result.length - 1] === element) {
+            text += "\n<b>Sum of categorie " + sumOfCategorie + "\u20AC</b>";
+            totalSum += +sumOfCategorie;
+            text += "\n---------------------------------------------\n";
+            text += "---------------------------------------------\n";
+            text += "<b> Total sum: " + totalSum.toFixed(2) + "\u20AC</b>";
+        }
     });
     return text;
 }

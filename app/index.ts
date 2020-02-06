@@ -373,23 +373,54 @@ bot.command('monthly_account_balance_details', async (ctx) => {
     }
 });
 
+bot.command('daily_account_balance_details', async (ctx) => 
+{
+    try {
+        let queryResult: QueryResult = await executeQuery(queries.DAILY_ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id]);
+        if (queryResult.rowCount > 0) {
+            let result: AccountBalanceDetails[] = queryResult.rows;
+            let options:any = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
+            let text: string = `<b> Daily account balance details (${queryResult.rows[0].timeStamp.toLocaleDateString('en', options)})</b>\n\n`;
+            ctx.replyWithHTML(createBalanceDetailsText(result, text));
+        }
+        else {
+            ctx.replyWithHTML('There are no entries from today. Please use the function "new_amount" or "new_income"')
+        }
+    } catch (err) {
+        logger.error(err);
+        ctx.replyWithHTML(`Error while checking the account balance details`);
+    }
+})
+
 function createBalanceDetailsText(result: AccountBalanceDetails[], text: string): string {
     let actualCategorieId: number = result[0].id;
     text += `<b>${result[0].categoriename}</b>`
     let sumOfCategorie: number = 0;
+    let totalSum:number = 0;
     //fix order here for sum
     result.forEach((element: AccountBalanceDetails) => {
         let amount: number = element.amount;
+     
         if (element.id > actualCategorieId) {
-            text += `\n<b>Sum of categorie ${sumOfCategorie}€</b>`;
+            text += `\n<b>Sum of categorie ${sumOfCategorie.toFixed(2)}€</b>`;
+            totalSum += +sumOfCategorie;
             sumOfCategorie = 0;
             text += "\n---------------------------------------------";
             text += `\n <b>${element.categoriename}</b>`;
             actualCategorieId = element.id;
         }
+
         let options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
         text += `\n Reason: ${element.name}  <b>${amount}€</b>  (${element.timeStamp.toLocaleDateString('de-DE', options)})`
         sumOfCategorie += +amount;
+        if(result[result.length-1] === element)
+        {
+            text += `\n<b>Sum of categorie ${sumOfCategorie}€</b>`;
+            totalSum += +sumOfCategorie;
+            text += "\n---------------------------------------------\n";
+            text += "---------------------------------------------\n";
+            text += `<b> Total sum: ${totalSum.toFixed(2)}€</b>`
+        }
     })
     return text;
 }

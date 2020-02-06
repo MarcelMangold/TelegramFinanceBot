@@ -15,7 +15,9 @@ const queries = {
     'CURRENT_MONTHLY_ACCOUNT_BALANCE_DETAILS': 'SELECT c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timeStamp" FROM  categorie c ' +
     'INNER JOIN TRANSACTION t ON c.id= t.categorieId  WHERE t.userId = $1 AND extract (month FROM "timeStamp") = extract (month FROM CURRENT_DATE) ORDER BY c.id ASC, t."timeStamp" ASC ;',
     'MONTHLY_ACCOUNT_BALANCE_DETAILS' : 'SELECT EXTRACT(YEAR from t."timeStamp") as year, EXTRACT(MONTH from t."timeStamp") as month,c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timeStamp" ' +
-                                        'FROM categorie c INNER JOIN TRANSACTION t ON c.id= t.categorieId WHERE t.userId = $1 ORDER BY year ASC, month ASC,c.id ASC ;'
+                                        'FROM categorie c INNER JOIN TRANSACTION t ON c.id= t.categorieId WHERE t.userId = $1 ORDER BY year ASC, month ASC,c.id ASC ;',
+    'DAILY_ACCOUNT_BALANCE_DETAILS' : 'SELECT EXTRACT(YEAR from t."timeStamp") as year, EXTRACT(MONTH from t."timeStamp") as month,c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timeStamp" ' +
+                                        'FROM categorie c INNER JOIN TRANSACTION t ON c.id= t.categorieId WHERE t.userId = $1 AND EXTRACT(DAY from t."timeStamp") = extract(day FROM CURRENT_DATE) ORDER BY year ASC, month ASC,c.id ASC ;'
 }
 
 
