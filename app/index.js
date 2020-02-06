@@ -482,7 +482,7 @@ bot.command('monthly_account_balance_details', function (ctx) { return __awaiter
     });
 }); });
 bot.command('monthly_account_balance', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var result, text, index, date, month, err_8;
+    var result, text, index, date, month, totalSum_1, err_8;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -498,6 +498,11 @@ bot.command('monthly_account_balance', function (ctx) { return __awaiter(void 0,
                     text += "\n++++ <b>" + month + "</b> ++++\n";
                     text += createAccountBalanceText(result.rows[index]);
                 }
+                totalSum_1 = 0;
+                result.rows.forEach(function (element) {
+                    totalSum_1 += +element.sum;
+                });
+                text += "\n------------------------\n<b>Total sum: " + totalSum_1 + "</b>";
                 ctx.replyWithHTML(text);
                 return [3 /*break*/, 3];
             case 2:

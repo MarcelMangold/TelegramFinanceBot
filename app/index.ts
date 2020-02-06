@@ -357,7 +357,6 @@ bot.command('monthly_account_balance_details', async (ctx) => {
                     actualMonth = result[index].timeStamp.getMonth();
                 }
             }
-
             ctx.replyWithHTML(text);
         }
         else {
@@ -370,11 +369,10 @@ bot.command('monthly_account_balance_details', async (ctx) => {
 });
 
 bot.command('monthly_account_balance', async (ctx) => {
-
+  
     try {
         let result: QueryResult = await executeQuery(queries.MONTHLY_SUM, [ctx.update.message.from.id]);
         let text: string = "<b>Monthly account balance</b>\n";
-
 
         for (const index in result.rows) {
             const date = new Date();
@@ -383,6 +381,11 @@ bot.command('monthly_account_balance', async (ctx) => {
             text += `\n++++ <b>${month}</b> ++++\n`
             text += createAccountBalanceText(result.rows[index]);
         }
+        let totalSum:number = 0;
+        result.rows.forEach((element:AccountBalance )=> {
+            totalSum += +element.sum;
+        })
+        text += `\n------------------------\n<b>Total sum: ${totalSum}</b>`
         ctx.replyWithHTML(text);
     }
     catch (err) {
