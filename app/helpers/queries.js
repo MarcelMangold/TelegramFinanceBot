@@ -7,10 +7,10 @@ var queries = {
     'CHECK_IF_CHAT_EXIST': 'SELECT * FROM chat where id= $1',
     'ADD_CHAT': 'INSERT INTO chat (id) VALUES ($1)',
     'ADD_USER': 'INSERT INTO user_management (id) VALUES ($1)',
-    'GET_INCOME_AMOUNT': 'SELECT SUM (amount) as sum FROM TRANSACTION  WHERE userId = $1 AND isPositive= true;',
-    'GET_SPEND_AMOUNT': 'SELECT SUM (amount) as sum FROM TRANSACTION  WHERE userId = $1 AND isPositive=false;',
+    'TOAL_SUM': "SELECT *, income - spend as sum FROM(\n        SELECT  SUM ( CASE ispositive WHEN true THEN 0  ELSE amount END) as spend, \n                SUM ( CASE ispositive WHEN false THEN 0  ELSE amount END) as income \n        FROM \"transaction\" WHERE userId = $1 )result;",
     'ADD_CATEGORIE': 'INSERT INTO categorie (name, userId) VALUES ($1, $2)',
     'SHOW_CATEGORIES': 'SELECT * FROM categorie WHERE userId = $1;',
+    'MONTHLY_SUM': "SELECT *, income - spend as sum FROM(\n            SELECT extract(month from \"timeStamp\") as month, \n                SUM ( CASE ispositive WHEN true THEN 0  ELSE amount END) as spend, \n                SUM ( CASE ispositive WHEN false THEN 0  ELSE amount END) as income \n            FROM \"transaction\" WHERE userId = $1 AND extract (year FROM \"timeStamp\") = extract (year FROM CURRENT_DATE) GROUP by month\n    )result;",
     'ACCOUNT_BALANCE_DETAILS': 'SELECT c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timeStamp" FROM  categorie c ' +
         'INNER JOIN TRANSACTION t ON c.id= t.categorieId  WHERE t.userId = $1 ORDER BY c.id ASC, t."timeStamp" ASC ;',
     'DELETE_CATEGOIRE': 'DELETE FROM categorie WHERE id=$1',

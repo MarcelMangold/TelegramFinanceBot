@@ -7,3 +7,11 @@ export interface AccountBalanceDetails
     ispositive: boolean,
     timeStamp:Date
 }
+
+export interface AccountBalance
+{
+    month?: number,
+    spend: number,
+    income:number,
+    sum:number
+}

@@ -365,30 +365,25 @@ bot.action(regex, function (ctx) { return __awaiter(void 0, void 0, void 0, func
     });
 }); });
 bot.command('account_balance', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var resultIncome, resultSpend, income, spend, err_4;
+    var result, err_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                _a.trys.push([0, 3, , 4]);
-                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.GET_INCOME_AMOUNT, [ctx.update.message.from.id])];
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.TOAL_SUM, [ctx.update.message.from.id])];
             case 1:
-                resultIncome = _a.sent();
-                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.GET_SPEND_AMOUNT, [ctx.update.message.from.id])];
+                result = _a.sent();
+                if (result.rowCount > 0)
+                    ctx.replyWithHTML("<b>Account balance:</b>\n" + createAccountBalanceText(result.rows[0]));
+                else
+                    ctx.replyWithHTML("There are no entries to show");
+                return [3 /*break*/, 3];
             case 2:
-                resultSpend = _a.sent();
-                income = resultIncome.rows[0].sum == null ? 0 : resultIncome.rows[0].sum;
-                spend = resultSpend.rows[0].sum == null ? 0 : resultSpend.rows[0].sum;
-                ctx.replyWithHTML("Account balance: \n" +
-                    ("Income: <b>" + income + "\u20AC</b> \n") +
-                    ("Spend: <b>" + spend + "\u20AC</b> \n") +
-                    ("Sum: <b>" + (income - spend) + "\u20AC</b>"));
-                return [3 /*break*/, 4];
-            case 3:
                 err_4 = _a.sent();
                 logger_1.logger.error(err_4);
                 ctx.replyWithHTML("Error while checking the account balance ");
-                return [3 /*break*/, 4];
-            case 4: return [2 /*return*/];
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
         }
     });
 }); });
@@ -486,8 +481,37 @@ bot.command('monthly_account_balance_details', function (ctx) { return __awaiter
         }
     });
 }); });
+bot.command('monthly_account_balance', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var result, text, index, date, month, err_8;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.MONTHLY_SUM, [ctx.update.message.from.id])];
+            case 1:
+                result = _a.sent();
+                text = "<b>Monthly account balance</b>\n";
+                for (index in result.rows) {
+                    date = new Date();
+                    date.setMonth(result.rows[index]['month'] - 1);
+                    month = date.toLocaleDateString('default', { month: 'long' });
+                    text += "\n++++ <b>" + month + "</b> ++++\n";
+                    text += createAccountBalanceText(result.rows[index]);
+                }
+                ctx.replyWithHTML(text);
+                return [3 /*break*/, 3];
+            case 2:
+                err_8 = _a.sent();
+                console.log(err_8);
+                logger_1.logger.error(err_8);
+                ctx.replyWithHTML("Error while checking the account balance details");
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
 bot.command('daily_account_balance_details', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var queryResult, result, options, text, err_8;
+    var queryResult, result, options, text, err_9;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -506,20 +530,24 @@ bot.command('daily_account_balance_details', function (ctx) { return __awaiter(v
                 }
                 return [3 /*break*/, 3];
             case 2:
-                err_8 = _a.sent();
-                logger_1.logger.error(err_8);
+                err_9 = _a.sent();
+                logger_1.logger.error(err_9);
                 ctx.replyWithHTML("Error while checking the account balance details");
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
         }
     });
 }); });
+function createAccountBalanceText(accountBalance) {
+    return "Income: " + accountBalance.income + "\u20AC \n" +
+        ("Spend: " + accountBalance.spend + "\u20AC \n") +
+        ("Sum: <b>" + accountBalance.sum + "\u20AC</b>");
+}
 function createBalanceDetailsText(result, text) {
     var actualCategorieId = result[0].id;
     text += "<b>" + result[0].categoriename + "</b>";
     var sumOfCategorie = 0;
     var totalSum = 0;
-    //fix order here for sum
     result.forEach(function (element) {
         var amount = element.amount;
         if (element.id > actualCategorieId) {

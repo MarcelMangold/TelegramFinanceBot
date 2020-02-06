@@ -4,7 +4,7 @@ import { executeQuery } from './helpers/database-adapter';
 import { queries } from './helpers/queries';
 import { logger } from './helpers/logger';
 import { QueryResult } from 'pg';
-import { AccountBalanceDetails } from './@types/queries';
+import { AccountBalanceDetails, AccountBalance } from './@types/queries';
 
 const Telegraf = require('telegraf');
 const session = Telegraf.session;
@@ -284,17 +284,13 @@ bot.action(regex, async (ctx) => {
 });
 
 bot.command('account_balance', async (ctx) => {
-
     try {
-        let resultIncome: QueryResult = await executeQuery(queries.GET_INCOME_AMOUNT, [ctx.update.message.from.id]);
-        let resultSpend: QueryResult = await executeQuery(queries.GET_SPEND_AMOUNT, [ctx.update.message.from.id]);
-        let income: number = resultIncome.rows[0].sum == null ? 0 : resultIncome.rows[0].sum;
-        let spend: number = resultSpend.rows[0].sum == null ? 0 : resultSpend.rows[0].sum;
+        let result: QueryResult = await executeQuery(queries.TOAL_SUM, [ctx.update.message.from.id]);
+        if(result.rowCount > 0)
+            ctx.replyWithHTML(`<b>Account balance:</b>\n${createAccountBalanceText(result.rows[0])}`);
+        else
+            ctx.replyWithHTML(`There are no entries to show`)
 
-        ctx.replyWithHTML(`Account balance: \n` +
-            `Income: <b>${income}€</b> \n` +
-            `Spend: <b>${spend}€</b> \n` +
-            `Sum: <b>${income - spend}€</b>`);
     } catch (err) {
         logger.error(err);
         ctx.replyWithHTML(`Error while checking the account balance `);
@@ -350,9 +346,9 @@ bot.command('monthly_account_balance_details', async (ctx) => {
             let actualStartMonthIndex: number = 0;
             let options = { month: 'long' };
             for (const index in result) {
-                if (parseInt(index) == result.length-1) {
+                if (parseInt(index) == result.length - 1) {
                     text += `\n\n<b>++++ Costs in ${result[index].timeStamp.toLocaleDateString('en', options)} ++++</b>\n`
-                    text = createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index+1)), text);
+                    text = createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index + 1)), text);
                 }
                 else if (result[index].timeStamp.getMonth() > actualMonth) {
                     text += `\n\n<b>++++ Costs in ${result[parseInt(index) - 1].timeStamp.toLocaleDateString('en', options)} ++++</b>\n`
@@ -373,13 +369,35 @@ bot.command('monthly_account_balance_details', async (ctx) => {
     }
 });
 
-bot.command('daily_account_balance_details', async (ctx) => 
-{
+bot.command('monthly_account_balance', async (ctx) => {
+
+    try {
+        let result: QueryResult = await executeQuery(queries.MONTHLY_SUM, [ctx.update.message.from.id]);
+        let text: string = "<b>Monthly account balance</b>\n";
+
+
+        for (const index in result.rows) {
+            const date = new Date();
+            date.setMonth(result.rows[index]['month']-1);
+            const month = date.toLocaleDateString('default', { month: 'long' });
+            text += `\n++++ <b>${month}</b> ++++\n`
+            text += createAccountBalanceText(result.rows[index]);
+        }
+        ctx.replyWithHTML(text);
+    }
+    catch (err) {
+        console.log(err);
+        logger.error(err);
+        ctx.replyWithHTML(`Error while checking the account balance details`);
+    }
+});
+
+bot.command('daily_account_balance_details', async (ctx) => {
     try {
         let queryResult: QueryResult = await executeQuery(queries.DAILY_ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id]);
         if (queryResult.rowCount > 0) {
             let result: AccountBalanceDetails[] = queryResult.rows;
-            let options:any = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
+            let options: any = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
             let text: string = `<b> Daily account balance details (${queryResult.rows[0].timeStamp.toLocaleDateString('en', options)})</b>\n\n`;
             ctx.replyWithHTML(createBalanceDetailsText(result, text));
         }
@@ -392,15 +410,20 @@ bot.command('daily_account_balance_details', async (ctx) =>
     }
 })
 
+function createAccountBalanceText(accountBalance: AccountBalance): string {
+    return  `Income: ${accountBalance.income}€ \n`+
+            `Spend: ${accountBalance.spend}€ \n`+
+            `Sum: <b>${accountBalance.sum}€</b>`;
+}
+
 function createBalanceDetailsText(result: AccountBalanceDetails[], text: string): string {
     let actualCategorieId: number = result[0].id;
     text += `<b>${result[0].categoriename}</b>`
     let sumOfCategorie: number = 0;
-    let totalSum:number = 0;
-    //fix order here for sum
+    let totalSum: number = 0;
     result.forEach((element: AccountBalanceDetails) => {
         let amount: number = element.amount;
-     
+
         if (element.id > actualCategorieId) {
             text += `\n<b>Sum of categorie ${sumOfCategorie.toFixed(2)}€</b>`;
             totalSum += +sumOfCategorie;
@@ -413,8 +436,7 @@ function createBalanceDetailsText(result: AccountBalanceDetails[], text: string)
         let options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
         text += `\n Reason: ${element.name}  <b>${amount}€</b>  (${element.timeStamp.toLocaleDateString('de-DE', options)})`
         sumOfCategorie += +amount;
-        if(result[result.length-1] === element)
-        {
+        if (result[result.length - 1] === element) {
             text += `\n<b>Sum of categorie ${sumOfCategorie}€</b>`;
             totalSum += +sumOfCategorie;
             text += "\n---------------------------------------------\n";
