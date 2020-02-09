@@ -160,8 +160,14 @@ var newIncome = new WizardScene("new_income", function (ctx) {
     return ctx.wizard.next();
 }, function (ctx) {
     ctx.wizard.state.amount = ctx.message.text;
-    ctx.reply("Please enter the reason for the income");
-    return ctx.wizard.next();
+    if (!isNaN(parseFloat(ctx.wizard.state.amount.replace(',', '.')))) {
+        ctx.reply("Please enter the reason for the income");
+        return ctx.wizard.next();
+    }
+    else {
+        ctx.replyWithHTML("The input is not allowed. The transaction was cancelled.");
+        return ctx.scene.leave();
+    }
 }, function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var userId, chatId, err_2;
     return __generator(this, function (_a) {
@@ -205,8 +211,14 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
     return ctx.wizard.next();
 }, function (ctx) {
     ctx.wizard.state.amount = ctx.message.text;
-    ctx.reply("Please enter the reason for the spending");
-    return ctx.wizard.next();
+    if (!isNaN(parseFloat(ctx.wizard.state.amount.replace(',', '.')))) {
+        ctx.reply("Please enter the reason for the income");
+        return ctx.wizard.next();
+    }
+    else {
+        ctx.replyWithHTML("The input is not allowed. The transaction was cancelled.");
+        return ctx.scene.leave();
+    }
 }, function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var userId, chatId, err_3;
     return __generator(this, function (_a) {

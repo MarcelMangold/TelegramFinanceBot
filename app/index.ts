@@ -127,8 +127,14 @@ const newIncome = new WizardScene(
     },
     ctx => {
         ctx.wizard.state.amount = ctx.message.text;
-        ctx.reply("Please enter the reason for the income");
-        return ctx.wizard.next();
+        if (!isNaN(parseFloat(ctx.wizard.state.amount.replace(',', '.')))) {
+            ctx.reply("Please enter the reason for the income");
+            return ctx.wizard.next();
+        }
+        else {
+            ctx.replyWithHTML(`The input is not allowed. The transaction was cancelled.`)
+            return ctx.scene.leave();
+        }
     },
     async ctx => {
         let userId = ctx.message.from.id;
@@ -169,8 +175,14 @@ const newAmount = new WizardScene(
     },
     ctx => {
         ctx.wizard.state.amount = ctx.message.text;
-        ctx.reply("Please enter the reason for the spending");
-        return ctx.wizard.next();
+        if (!isNaN(parseFloat(ctx.wizard.state.amount.replace(',', '.')))) {
+            ctx.reply("Please enter the reason for the income");
+            return ctx.wizard.next();
+        }
+        else {
+            ctx.replyWithHTML(`The input is not allowed. The transaction was cancelled.`)
+            return ctx.scene.leave();
+        }
     },
     async ctx => {
         let userId = ctx.message.from.id;
@@ -286,7 +298,7 @@ bot.action(regex, async (ctx) => {
 bot.command('account_balance', async (ctx) => {
     try {
         let result: QueryResult = await executeQuery(queries.TOAL_SUM, [ctx.update.message.from.id]);
-        if(result.rowCount > 0)
+        if (result.rowCount > 0)
             ctx.replyWithHTML(`<b>Account balance:</b>\n${createAccountBalanceText(result.rows[0])}`);
         else
             ctx.replyWithHTML(`There are no entries to show`)
@@ -369,20 +381,20 @@ bot.command('monthly_account_balance_details', async (ctx) => {
 });
 
 bot.command('monthly_account_balance', async (ctx) => {
-  
+
     try {
         let result: QueryResult = await executeQuery(queries.MONTHLY_SUM, [ctx.update.message.from.id]);
         let text: string = "<b>Monthly account balance</b>\n";
 
         for (const index in result.rows) {
             const date = new Date();
-            date.setMonth(result.rows[index]['month']-1);
+            date.setMonth(result.rows[index]['month'] - 1);
             const month = date.toLocaleDateString('default', { month: 'long' });
             text += `\n++++ <b>${month}</b> ++++\n`
             text += createAccountBalanceText(result.rows[index]);
         }
-        let totalSum:number = 0;
-        result.rows.forEach((element:AccountBalance )=> {
+        let totalSum: number = 0;
+        result.rows.forEach((element: AccountBalance) => {
             totalSum += +element.sum;
         })
         text += `\n------------------------\n<b>Total sum: ${totalSum}</b>`
@@ -414,9 +426,9 @@ bot.command('daily_account_balance_details', async (ctx) => {
 })
 
 function createAccountBalanceText(accountBalance: AccountBalance): string {
-    return  `Income: ${accountBalance.income}€ \n`+
-            `Spend: ${accountBalance.spend}€ \n`+
-            `Sum: <b>${accountBalance.sum}€</b>`;
+    return `Income: ${accountBalance.income}€ \n` +
+        `Spend: ${accountBalance.spend}€ \n` +
+        `Sum: <b>${accountBalance.sum}€</b>`;
 }
 
 function createBalanceDetailsText(result: AccountBalanceDetails[], text: string): string {
