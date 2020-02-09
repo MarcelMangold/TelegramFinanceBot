@@ -13,5 +13,6 @@ export interface AccountBalance
     month?: number,
     spend: number,
     income:number,
-    sum:number
+    sum:number,
+    ispositive?: boolean
 }

@@ -512,7 +512,10 @@ bot.command('monthly_account_balance', function (ctx) { return __awaiter(void 0,
                 }
                 totalSum_1 = 0;
                 result.rows.forEach(function (element) {
-                    totalSum_1 += +element.sum;
+                    if (!element.ispositive)
+                        totalSum_1 += +element.sum;
+                    else
+                        totalSum_1 -= +element.sum;
                 });
                 text += "\n------------------------\n<b>Total sum: " + totalSum_1 + "</b>";
                 ctx.replyWithHTML(text);
@@ -566,7 +569,7 @@ function createBalanceDetailsText(result, text) {
     var sumOfCategorie = 0;
     var totalSum = 0;
     result.forEach(function (element) {
-        var amount = element.amount;
+        var amount = element.ispositive == true ? parseFloat("-" + element.amount) : element.amount;
         if (element.id > actualCategorieId) {
             text += "\n<b>Sum of categorie " + sumOfCategorie.toFixed(2) + "\u20AC</b>";
             totalSum += +sumOfCategorie;

@@ -395,7 +395,10 @@ bot.command('monthly_account_balance', async (ctx) => {
         }
         let totalSum: number = 0;
         result.rows.forEach((element: AccountBalance) => {
-            totalSum += +element.sum;
+            if(!element.ispositive)
+                totalSum += +element.sum;
+            else    
+                totalSum -= + element.sum;
         })
         text += `\n------------------------\n<b>Total sum: ${totalSum}</b>`
         ctx.replyWithHTML(text);
@@ -437,7 +440,7 @@ function createBalanceDetailsText(result: AccountBalanceDetails[], text: string)
     let sumOfCategorie: number = 0;
     let totalSum: number = 0;
     result.forEach((element: AccountBalanceDetails) => {
-        let amount: number = element.amount;
+        let amount: number = element.ispositive == true? parseFloat("-" + element.amount) : element.amount;
 
         if (element.id > actualCategorieId) {
             text += `\n<b>Sum of categorie ${sumOfCategorie.toFixed(2)}€</b>`;
