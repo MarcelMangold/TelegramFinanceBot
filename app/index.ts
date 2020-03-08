@@ -104,7 +104,7 @@ const spentMoneyByCategorie = new WizardScene(
                     text += `\n Reason: ${element.name}  <b>${element.amount}€</b>  (${element.timeStamp.toLocaleDateString('de-DE', options)})`
                     totalSum += +amount;
                 })
-                text += `\n------------------------\n<b>Total sum: ${totalSum}</b>`
+                text += `\n------------------------\n<b>Total sum: ${totalSum.toFixed(2)}</b>`
                 ctx.replyWithHTML(text);
             }
             else {

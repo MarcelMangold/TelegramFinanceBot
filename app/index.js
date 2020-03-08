@@ -141,7 +141,7 @@ var spentMoneyByCategorie = new WizardScene("spent_money_by_categorie", function
                         text_1 += "\n Reason: " + element.name + "  <b>" + element.amount + "\u20AC</b>  (" + element.timeStamp.toLocaleDateString('de-DE', options_1) + ")";
                         totalSum_1 += +amount_1;
                     });
-                    text_1 += "\n------------------------\n<b>Total sum: " + totalSum_1 + "</b>";
+                    text_1 += "\n------------------------\n<b>Total sum: " + totalSum_1.toFixed(2) + "</b>";
                     ctx.replyWithHTML(text_1);
                 }
                 else {
