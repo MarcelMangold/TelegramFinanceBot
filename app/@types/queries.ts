@@ -16,3 +16,11 @@ export interface AccountBalance
     sum:number,
     ispositive?: boolean
 }
+
+export interface Categorie
+{
+    name: string,
+    amount: number,
+    ispositive: boolean
+    timeStamp:Date
+}

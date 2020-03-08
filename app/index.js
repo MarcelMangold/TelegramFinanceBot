@@ -114,11 +114,54 @@ var deleteCategorie = new WizardScene("delete_categorie", function (ctx) { retur
         }
     });
 }); });
+var spentMoneyByCategorie = new WizardScene("spent_money_by_categorie", function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var actionData, userId, chatId, queryResult, text_1, totalSum_1, options_1, amount_1, err_1;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                actionData = ctx.update.callback_query.data;
+                userId = ctx.update.callback_query.from.id;
+                chatId = ctx.update.callback_query.message.chat.id;
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 4, , 5]);
+                return [4 /*yield*/, addChatAndUserIfNotExist(chatId, userId)];
+            case 2:
+                _a.sent();
+                return [4 /*yield*/, database_adapter_1.executeQuery(queries_1.queries.SPENT_MONEY_BY_CATEGORIE, [actionData.replace("action", "").split("-")[0], userId, chatId])];
+            case 3:
+                queryResult = _a.sent();
+                if (queryResult.rowCount > 0) {
+                    text_1 = "<b>Categorie \"" + actionData.replace("action", "").split("-")[1] + "\" details:</b>";
+                    totalSum_1 = 0;
+                    options_1 = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
+                    amount_1 = 0;
+                    queryResult.rows.forEach(function (element) {
+                        amount_1 = element.ispositive == true ? parseFloat("-" + element.amount) : element.amount;
+                        text_1 += "\n Reason: " + element.name + "  <b>" + element.amount + "\u20AC</b>  (" + element.timeStamp.toLocaleDateString('de-DE', options_1) + ")";
+                        totalSum_1 += +amount_1;
+                    });
+                    text_1 += "\n------------------------\n<b>Total sum: " + totalSum_1 + "</b>";
+                    ctx.replyWithHTML(text_1);
+                }
+                else {
+                    ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"');
+                }
+                return [3 /*break*/, 5];
+            case 4:
+                err_1 = _a.sent();
+                logger_1.logger.error(err_1);
+                ctx.replyWithHTML("<b>Error while saving the categorie in the database</b>");
+                return [3 /*break*/, 5];
+            case 5: return [2 /*return*/, ctx.scene.leave()];
+        }
+    });
+}); });
 var newCategorie = new WizardScene("new_categorie", function (ctx) {
     ctx.reply("Please type the categorie you want to create");
     return ctx.wizard.next();
 }, function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var userId, chatId, err_1;
+    var userId, chatId, err_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -138,8 +181,8 @@ var newCategorie = new WizardScene("new_categorie", function (ctx) {
                 ctx.replyWithHTML("The category " + ctx.message.text + " was created successfully");
                 return [3 /*break*/, 5];
             case 4:
-                err_1 = _a.sent();
-                logger_1.logger.error(err_1);
+                err_2 = _a.sent();
+                logger_1.logger.error(err_2);
                 ctx.replyWithHTML("<b>Error while saving the categorie in the database</b>");
                 return [3 /*break*/, 5];
             case 5: return [2 /*return*/, ctx.scene.leave()];
@@ -169,7 +212,7 @@ var newIncome = new WizardScene("new_income", function (ctx) {
         return ctx.scene.leave();
     }
 }, function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var userId, chatId, err_2;
+    var userId, chatId, err_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -189,8 +232,8 @@ var newIncome = new WizardScene("new_income", function (ctx) {
                 ctx.replyWithHTML("The income of <b>" + ctx.wizard.state.amount + "\u20AC</b> were booked to the account");
                 return [3 /*break*/, 5];
             case 4:
-                err_2 = _a.sent();
-                logger_1.logger.error(err_2);
+                err_3 = _a.sent();
+                logger_1.logger.error(err_3);
                 ctx.replyWithHTML("<b>Error while saving the money in the database</b>");
                 return [3 /*break*/, 5];
             case 5: return [2 /*return*/, ctx.scene.leave()];
@@ -220,7 +263,7 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
         return ctx.scene.leave();
     }
 }, function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var userId, chatId, err_3;
+    var userId, chatId, err_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -240,15 +283,15 @@ var newAmount = new WizardScene("new_amount", function (ctx) {
                 ctx.replyWithHTML("The amount of <b>" + ctx.wizard.state.amount + "\u20AC</b> were booked to the account");
                 return [3 /*break*/, 5];
             case 4:
-                err_3 = _a.sent();
-                logger_1.logger.error(err_3);
+                err_4 = _a.sent();
+                logger_1.logger.error(err_4);
                 ctx.replyWithHTML("<b>Error while saving the money in the database</b>");
                 return [3 /*break*/, 5];
             case 5: return [2 /*return*/, ctx.scene.leave()];
         }
     });
 }); });
-var stage = new Stage([newAmount, newCategorie, newIncome, deleteCategorie]);
+var stage = new Stage([newAmount, newCategorie, newIncome, deleteCategorie, spentMoneyByCategorie]);
 bot.use(session());
 bot.use(stage.middleware());
 bot.command('new_categorie', function (_a) {
@@ -325,6 +368,22 @@ bot.command('delete_categorie', function (ctx) { return __awaiter(void 0, void 0
         }
     });
 }); });
+bot.command('show_money_spent_by_category', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var userId, chatId, keyboard;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                userId = ctx.message.from.id;
+                chatId = ctx.message.chat.id;
+                addChatIfNotExist(chatId);
+                return [4 /*yield*/, getCategoriesInKeyboard(userId, "spent_money_by_categorie")];
+            case 1:
+                keyboard = _a.sent();
+                ctx.reply('Select the categorie', keyboard.draw());
+                return [2 /*return*/];
+        }
+    });
+}); });
 bot.command('new_amount', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
     var userId, chatId, keyboard;
     return __generator(this, function (_a) {
@@ -377,7 +436,7 @@ bot.action(regex, function (ctx) { return __awaiter(void 0, void 0, void 0, func
     });
 }); });
 bot.command('account_balance', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var result, err_4;
+    var result, err_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -391,8 +450,8 @@ bot.command('account_balance', function (ctx) { return __awaiter(void 0, void 0,
                     ctx.replyWithHTML("There are no entries to show");
                 return [3 /*break*/, 3];
             case 2:
-                err_4 = _a.sent();
-                logger_1.logger.error(err_4);
+                err_5 = _a.sent();
+                logger_1.logger.error(err_5);
                 ctx.replyWithHTML("Error while checking the account balance ");
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -400,7 +459,7 @@ bot.command('account_balance', function (ctx) { return __awaiter(void 0, void 0,
     });
 }); });
 bot.command('account_balance_details', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var queryResult, text, err_5;
+    var queryResult, text, err_6;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -417,8 +476,8 @@ bot.command('account_balance_details', function (ctx) { return __awaiter(void 0,
                 }
                 return [3 /*break*/, 3];
             case 2:
-                err_5 = _a.sent();
-                logger_1.logger.error(err_5);
+                err_6 = _a.sent();
+                logger_1.logger.error(err_6);
                 ctx.replyWithHTML("Error while checking the account balance details");
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -426,7 +485,7 @@ bot.command('account_balance_details', function (ctx) { return __awaiter(void 0,
     });
 }); });
 bot.command('curr_monthly_acc_balance_details', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var queryResult, text, err_6;
+    var queryResult, text, err_7;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -443,8 +502,8 @@ bot.command('curr_monthly_acc_balance_details', function (ctx) { return __awaite
                 }
                 return [3 /*break*/, 3];
             case 2:
-                err_6 = _a.sent();
-                logger_1.logger.error(err_6);
+                err_7 = _a.sent();
+                logger_1.logger.error(err_7);
                 ctx.replyWithHTML("Error while checking the account balance details");
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -452,7 +511,7 @@ bot.command('curr_monthly_acc_balance_details', function (ctx) { return __awaite
     });
 }); });
 bot.command('monthly_account_balance_details', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var queryResult, text, result, actualMonth, actualStartMonthIndex, options, index, err_7;
+    var queryResult, text, result, actualMonth, actualStartMonthIndex, options, index, err_8;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -485,8 +544,8 @@ bot.command('monthly_account_balance_details', function (ctx) { return __awaiter
                 }
                 return [3 /*break*/, 3];
             case 2:
-                err_7 = _a.sent();
-                logger_1.logger.error(err_7);
+                err_8 = _a.sent();
+                logger_1.logger.error(err_8);
                 ctx.replyWithHTML("Error while checking the account balance details");
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -494,7 +553,7 @@ bot.command('monthly_account_balance_details', function (ctx) { return __awaiter
     });
 }); });
 bot.command('monthly_account_balance', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var result, text, index, date, month, totalSum_1, err_8;
+    var result, text, index, date, month, totalSum_2, err_9;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -510,20 +569,20 @@ bot.command('monthly_account_balance', function (ctx) { return __awaiter(void 0,
                     text += "\n++++ <b>" + month + "</b> ++++\n";
                     text += createAccountBalanceText(result.rows[index]);
                 }
-                totalSum_1 = 0;
+                totalSum_2 = 0;
                 result.rows.forEach(function (element) {
                     if (!element.ispositive)
-                        totalSum_1 += +element.sum;
+                        totalSum_2 += +element.sum;
                     else
-                        totalSum_1 -= +element.sum;
+                        totalSum_2 -= +element.sum;
                 });
-                text += "\n------------------------\n<b>Total sum: " + totalSum_1 + "</b>";
+                text += "\n------------------------\n<b>Total sum: " + totalSum_2 + "</b>";
                 ctx.replyWithHTML(text);
                 return [3 /*break*/, 3];
             case 2:
-                err_8 = _a.sent();
-                console.log(err_8);
-                logger_1.logger.error(err_8);
+                err_9 = _a.sent();
+                console.log(err_9);
+                logger_1.logger.error(err_9);
                 ctx.replyWithHTML("Error while checking the account balance details");
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -531,7 +590,7 @@ bot.command('monthly_account_balance', function (ctx) { return __awaiter(void 0,
     });
 }); });
 bot.command('daily_account_balance_details', function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var queryResult, result, options, text, err_9;
+    var queryResult, result, options, text, err_10;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -550,8 +609,8 @@ bot.command('daily_account_balance_details', function (ctx) { return __awaiter(v
                 }
                 return [3 /*break*/, 3];
             case 2:
-                err_9 = _a.sent();
-                logger_1.logger.error(err_9);
+                err_10 = _a.sent();
+                logger_1.logger.error(err_10);
                 ctx.replyWithHTML("Error while checking the account balance details");
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];

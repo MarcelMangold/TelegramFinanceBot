@@ -4,7 +4,7 @@ import { executeQuery } from './helpers/database-adapter';
 import { queries } from './helpers/queries';
 import { logger } from './helpers/logger';
 import { QueryResult } from 'pg';
-import { AccountBalanceDetails, AccountBalance } from './@types/queries';
+import { AccountBalanceDetails, AccountBalance, Categorie } from './@types/queries';
 
 const Telegraf = require('telegraf');
 const session = Telegraf.session;
@@ -82,6 +82,45 @@ const deleteCategorie = new WizardScene(
         return ctx.scene.leave();
     }
 
+);
+
+const spentMoneyByCategorie = new WizardScene(
+    "spent_money_by_categorie",
+    async ctx => {
+        let actionData: string = ctx.update.callback_query.data;
+        let userId = ctx.update.callback_query.from.id;
+        let chatId = ctx.update.callback_query.message.chat.id;
+        try {
+            await addChatAndUserIfNotExist(chatId, userId);
+            //categorieid, userID, chatId
+            let queryResult:QueryResult = await executeQuery(queries.SPENT_MONEY_BY_CATEGORIE, [actionData.replace("action", "").split("-")[0], userId, chatId]);
+            if (queryResult.rowCount > 0) {
+                let text: string = `<b>Categorie "${actionData.replace("action", "").split("-")[1]}" details:</b>`;
+                let totalSum: number = 0;
+                let options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
+                let amount: number = 0
+                queryResult.rows.forEach((element: Categorie) => {
+                    amount = element.ispositive == true ? parseFloat("-" + element.amount) : element.amount;
+                    text += `\n Reason: ${element.name}  <b>${element.amount}€</b>  (${element.timeStamp.toLocaleDateString('de-DE', options)})`
+                    totalSum += +amount;
+                })
+                text += `\n------------------------\n<b>Total sum: ${totalSum}</b>`
+                ctx.replyWithHTML(text);
+            }
+            else {
+                ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"')
+            }
+        }
+        catch (err) {
+            logger.error(err);
+            ctx.replyWithHTML(
+                `<b>Error while saving the categorie in the database</b>`
+            );
+        }
+
+
+        return ctx.scene.leave();
+    }
 );
 
 
@@ -210,7 +249,7 @@ const newAmount = new WizardScene(
 );
 
 
-const stage = new Stage([newAmount, newCategorie, newIncome, deleteCategorie]);
+const stage = new Stage([newAmount, newCategorie, newIncome, deleteCategorie, spentMoneyByCategorie]);
 bot.use(session());
 bot.use(stage.middleware());
 
@@ -263,6 +302,15 @@ bot.command('delete_categorie', async (ctx) => {
     let keyboard = await getCategoriesInKeyboard(userID, "delete_categorie");
     ctx.reply('Select the categorie which you want to delete', keyboard.draw());
 })
+
+bot.command('show_money_spent_by_category', async (ctx) => {
+    let userId = ctx.message.from.id;
+    let chatId = ctx.message.chat.id;
+    addChatIfNotExist(chatId);
+    let keyboard = await getCategoriesInKeyboard(userId, "spent_money_by_categorie");
+    ctx.reply('Select the categorie', keyboard.draw());
+}
+);
 
 bot.command('new_amount', async (ctx) => {
     let userId = ctx.message.from.id;
@@ -327,8 +375,7 @@ bot.command('account_balance_details', async (ctx) => {
         ctx.replyWithHTML(`Error while checking the account balance details`);
     }
 
-}
-);
+});
 
 bot.command('curr_monthly_acc_balance_details', async (ctx) => {
 
@@ -395,9 +442,9 @@ bot.command('monthly_account_balance', async (ctx) => {
         }
         let totalSum: number = 0;
         result.rows.forEach((element: AccountBalance) => {
-            if(!element.ispositive)
+            if (!element.ispositive)
                 totalSum += +element.sum;
-            else    
+            else
                 totalSum -= + element.sum;
         })
         text += `\n------------------------\n<b>Total sum: ${totalSum}</b>`
@@ -440,7 +487,7 @@ function createBalanceDetailsText(result: AccountBalanceDetails[], text: string)
     let sumOfCategorie: number = 0;
     let totalSum: number = 0;
     result.forEach((element: AccountBalanceDetails) => {
-        let amount: number = element.ispositive == true? parseFloat("-" + element.amount) : element.amount;
+        let amount: number = element.ispositive == true ? parseFloat("-" + element.amount) : element.amount;
 
         if (element.id > actualCategorieId) {
             text += `\n<b>Sum of categorie ${sumOfCategorie.toFixed(2)}€</b>`;
