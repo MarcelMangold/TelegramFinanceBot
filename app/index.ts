@@ -105,7 +105,7 @@ const spentMoneyByCategorie = new WizardScene(
                     totalSum += +amount;
                 })
                 text += `\n------------------------\n<b>Total sum: ${totalSum.toFixed(2)}</b>`
-                ctx.replyWithHTML(text);
+                printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(queryResult.rows, text)));
             }
             else {
                 ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"')
@@ -347,7 +347,7 @@ bot.command('account_balance', async (ctx) => {
     try {
         let result: QueryResult = await executeQuery(queries.TOAL_SUM, [ctx.update.message.from.id]);
         if (result.rowCount > 0)
-            ctx.replyWithHTML(`<b>Account balance:</b>\n${createAccountBalanceText(result.rows[0])}`);
+            printArrayAsHTML(ctx, splitMessage(`<b>Account balance:</b>\n${createAccountBalanceText(result.rows[0])}`));
         else
             ctx.replyWithHTML(`There are no entries to show`)
 
@@ -365,7 +365,7 @@ bot.command('account_balance_details', async (ctx) => {
         let queryResult: QueryResult = await executeQuery(queries.ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id]);
         if (queryResult.rowCount > 0) {
             let text: string = '<b>Account balance details:</b>\n\n';
-            ctx.replyWithHTML(createBalanceDetailsText(queryResult.rows, text));
+            printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(queryResult.rows, text)));
         }
         else {
             ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"')
@@ -383,7 +383,7 @@ bot.command('curr_monthly_acc_balance_details', async (ctx) => {
         let queryResult: QueryResult = await executeQuery(queries.CURRENT_MONTHLY_ACCOUNT_BALANCE_DETAILS, [ctx.update.message.from.id]);
         if (queryResult.rowCount > 0) {
             let text: string = '<b>Current account balance details:</b>\n\n';
-            ctx.replyWithHTML(createBalanceDetailsText(queryResult.rows, text));
+            printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(queryResult.rows, text)));
         }
         else {
             ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"')
@@ -416,7 +416,7 @@ bot.command('monthly_account_balance_details', async (ctx) => {
                     actualMonth = result[index].timeStamp.getMonth();
                 }
             }
-            ctx.replyWithHTML(text);
+            printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(queryResult.rows, text)));
         }
         else {
             ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"')
@@ -448,7 +448,7 @@ bot.command('monthly_account_balance', async (ctx) => {
                 totalSum -= + element.sum;
         })
         text += `\n------------------------\n<b>Total sum: ${totalSum}</b>`
-        ctx.replyWithHTML(text);
+        printArrayAsHTML(ctx, splitMessage(text));
     }
     catch (err) {
         console.log(err);
@@ -464,7 +464,7 @@ bot.command('daily_account_balance_details', async (ctx) => {
             let result: AccountBalanceDetails[] = queryResult.rows;
             let options: any = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
             let text: string = `<b> Daily account balance details (${queryResult.rows[0].timeStamp.toLocaleDateString('en', options)})</b>\n\n`;
-            ctx.replyWithHTML(createBalanceDetailsText(result, text));
+            printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(result, text)));
         }
         else {
             ctx.replyWithHTML('There are no entries from today. Please use the function "new_amount" or "new_income"')
@@ -511,6 +511,35 @@ function createBalanceDetailsText(result: AccountBalanceDetails[], text: string)
     })
     return text;
 }
+
+function splitMessage(text:string) : string[] {
+    let messages:string[] = [];
+    if(text.length > 4096){
+        let textLength: number = text.length;
+        while((textLength > 4096 || text.charAt(textLength) != "\n")){
+            textLength--;
+        }
+        messages.push(text.substring(0, textLength));
+        messages.push(text.substring(textLength, text.length));
+    }
+    else{
+        messages.push(text);
+    }
+
+    let index = messages.length-1
+    if(messages[index].length > 4096){
+        messages.push.apply(messages,splitMessage(messages[index]));
+        messages.splice(index,1)
+    }
+
+    return messages;
+}
+
+function printArrayAsHTML(ctx,messages:string[]){
+    messages.forEach(async (element:string) => await ctx.replyWithHTML(element))
+}
+
+
 
 bot.launch()
 

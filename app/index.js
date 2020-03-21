@@ -142,7 +142,7 @@ var spentMoneyByCategorie = new WizardScene("spent_money_by_categorie", function
                         totalSum_1 += +amount_1;
                     });
                     text_1 += "\n------------------------\n<b>Total sum: " + totalSum_1.toFixed(2) + "</b>";
-                    ctx.replyWithHTML(text_1);
+                    printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(queryResult.rows, text_1)));
                 }
                 else {
                     ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"');
@@ -445,7 +445,7 @@ bot.command('account_balance', function (ctx) { return __awaiter(void 0, void 0,
             case 1:
                 result = _a.sent();
                 if (result.rowCount > 0)
-                    ctx.replyWithHTML("<b>Account balance:</b>\n" + createAccountBalanceText(result.rows[0]));
+                    printArrayAsHTML(ctx, splitMessage("<b>Account balance:</b>\n" + createAccountBalanceText(result.rows[0])));
                 else
                     ctx.replyWithHTML("There are no entries to show");
                 return [3 /*break*/, 3];
@@ -469,7 +469,7 @@ bot.command('account_balance_details', function (ctx) { return __awaiter(void 0,
                 queryResult = _a.sent();
                 if (queryResult.rowCount > 0) {
                     text = '<b>Account balance details:</b>\n\n';
-                    ctx.replyWithHTML(createBalanceDetailsText(queryResult.rows, text));
+                    printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(queryResult.rows, text)));
                 }
                 else {
                     ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"');
@@ -495,7 +495,7 @@ bot.command('curr_monthly_acc_balance_details', function (ctx) { return __awaite
                 queryResult = _a.sent();
                 if (queryResult.rowCount > 0) {
                     text = '<b>Current account balance details:</b>\n\n';
-                    ctx.replyWithHTML(createBalanceDetailsText(queryResult.rows, text));
+                    printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(queryResult.rows, text)));
                 }
                 else {
                     ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"');
@@ -537,7 +537,7 @@ bot.command('monthly_account_balance_details', function (ctx) { return __awaiter
                             actualMonth = result[index].timeStamp.getMonth();
                         }
                     }
-                    ctx.replyWithHTML(text);
+                    printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(queryResult.rows, text)));
                 }
                 else {
                     ctx.replyWithHTML('There are no entries. Please use the function "new_amount" or "new_income"');
@@ -577,7 +577,7 @@ bot.command('monthly_account_balance', function (ctx) { return __awaiter(void 0,
                         totalSum_2 -= +element.sum;
                 });
                 text += "\n------------------------\n<b>Total sum: " + totalSum_2 + "</b>";
-                ctx.replyWithHTML(text);
+                printArrayAsHTML(ctx, splitMessage(text));
                 return [3 /*break*/, 3];
             case 2:
                 err_9 = _a.sent();
@@ -602,7 +602,7 @@ bot.command('daily_account_balance_details', function (ctx) { return __awaiter(v
                     result = queryResult.rows;
                     options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
                     text = "<b> Daily account balance details (" + queryResult.rows[0].timeStamp.toLocaleDateString('en', options) + ")</b>\n\n";
-                    ctx.replyWithHTML(createBalanceDetailsText(result, text));
+                    printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(result, text)));
                 }
                 else {
                     ctx.replyWithHTML('There are no entries from today. Please use the function "new_amount" or "new_income"');
@@ -649,6 +649,35 @@ function createBalanceDetailsText(result, text) {
         }
     });
     return text;
+}
+function splitMessage(text) {
+    var messages = [];
+    if (text.length > 4096) {
+        var textLength = text.length;
+        while ((textLength > 4096 || text.charAt(textLength) != "\n")) {
+            textLength--;
+        }
+        messages.push(text.substring(0, textLength));
+        messages.push(text.substring(textLength, text.length));
+    }
+    else {
+        messages.push(text);
+    }
+    var index = messages.length - 1;
+    if (messages[index].length > 4096) {
+        messages.push.apply(messages, splitMessage(messages[index]));
+        messages.splice(index, 1);
+    }
+    return messages;
+}
+function printArrayAsHTML(ctx, messages) {
+    var _this = this;
+    messages.forEach(function (element) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, ctx.replyWithHTML(element)];
+            case 1: return [2 /*return*/, _a.sent()];
+        }
+    }); }); });
 }
 bot.launch();
 function addChatAndUserIfNotExist(chatId, userId) {
