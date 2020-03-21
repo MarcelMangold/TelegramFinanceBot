@@ -535,8 +535,9 @@ function splitMessage(text:string) : string[] {
     return messages;
 }
 
-function printArrayAsHTML(ctx,messages:string[]){
-    messages.forEach(async (element:string) => await ctx.replyWithHTML(element))
+async function printArrayAsHTML(ctx,messages:string[]){
+    for(let i = 0; i <  messages.length; i++)
+        await ctx.replyWithHTML(messages[i])  
 }
 
 

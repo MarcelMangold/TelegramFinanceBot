@@ -671,13 +671,26 @@ function splitMessage(text) {
     return messages;
 }
 function printArrayAsHTML(ctx, messages) {
-    var _this = this;
-    messages.forEach(function (element) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, ctx.replyWithHTML(element)];
-            case 1: return [2 /*return*/, _a.sent()];
-        }
-    }); }); });
+    return __awaiter(this, void 0, void 0, function () {
+        var i;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    i = 0;
+                    _a.label = 1;
+                case 1:
+                    if (!(i < messages.length)) return [3 /*break*/, 4];
+                    return [4 /*yield*/, ctx.replyWithHTML(messages[i])];
+                case 2:
+                    _a.sent();
+                    _a.label = 3;
+                case 3:
+                    i++;
+                    return [3 /*break*/, 1];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
 }
 bot.launch();
 function addChatAndUserIfNotExist(chatId, userId) {
