@@ -18,12 +18,12 @@
   "author": "Marcel Mangold",
   "license": "MIT",
   "dependencies": {
-    "@types/pg": "^7.14.1",
+    "@types/pg": "^7.14.3",
     "dotenv": "^8.2.0",
-    "pg": "^7.17.1",
-    "telegraf": "^3.35.0",
+    "pg": "^7.18.2",
+    "telegraf": "^3.36.0",
     "telegraf-keyboard": "^1.1.2",
-    "typescript": "^3.7.5",
+    "typescript": "^3.8.3",
     "winston": "^3.2.1"
   }
 }
