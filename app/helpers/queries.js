@@ -10,16 +10,16 @@ var queries = {
     'TOAL_SUM': "SELECT *, income - spend as sum FROM(\n        SELECT  SUM ( CASE ispositive WHEN true THEN 0  ELSE amount END) as spend, \n                SUM ( CASE ispositive WHEN false THEN 0  ELSE amount END) as income \n        FROM \"transaction\" WHERE userId = $1 )result;",
     'ADD_CATEGORIE': 'INSERT INTO categorie (name, userId) VALUES ($1, $2)',
     'SHOW_CATEGORIES': 'SELECT * FROM categorie WHERE userId = $1;',
-    'MONTHLY_SUM': "SELECT *, income - spend as sum FROM(\n            SELECT extract(month from \"timeStamp\") as month, \n                SUM ( CASE ispositive WHEN true THEN 0  ELSE amount END) as spend, \n                SUM ( CASE ispositive WHEN false THEN 0  ELSE amount END) as income \n            FROM \"transaction\" WHERE userId = $1 AND extract (year FROM \"timeStamp\") = extract (year FROM CURRENT_DATE) GROUP by month\n    )result;",
-    'SPENT_MONEY_BY_CATEGORIE': 'SELECT name,amount,ispositive,"timeStamp" FROM TRANSACTION WHERE  categorieid = $1 AND userId = $2 AND chatid =$3',
-    'ACCOUNT_BALANCE_DETAILS': 'SELECT c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timeStamp" FROM  categorie c ' +
-        'INNER JOIN TRANSACTION t ON c.id= t.categorieId  WHERE t.userId = $1 ORDER BY c.id ASC, t."timeStamp" ASC ;',
+    'MONTHLY_SUM': "SELECT *, income - spend as sum FROM(\n            SELECT extract(month from \"timestamp\") as month, \n                SUM ( CASE ispositive WHEN true THEN 0  ELSE amount END) as spend, \n                SUM ( CASE ispositive WHEN false THEN 0  ELSE amount END) as income \n            FROM \"transaction\" WHERE userId = $1 AND extract (year FROM \"timestamp\") = extract (year FROM CURRENT_DATE) GROUP by month\n    )result;",
+    'SPENT_MONEY_BY_CATEGORIE': 'SELECT name,amount,ispositive,"timestamp" FROM TRANSACTION WHERE  categorieid = $1 AND userId = $2 AND chatid =$3',
+    'ACCOUNT_BALANCE_DETAILS': 'SELECT c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timestamp" FROM  categorie c ' +
+        'INNER JOIN TRANSACTION t ON c.id= t.categorieId  WHERE t.userId = $1 ORDER BY c.id ASC, t."timestamp" ASC ;',
     'DELETE_CATEGOIRE': 'DELETE FROM categorie WHERE id=$1',
-    'CURRENT_MONTHLY_ACCOUNT_BALANCE_DETAILS': 'SELECT c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timeStamp" FROM  categorie c ' +
-        'INNER JOIN TRANSACTION t ON c.id= t.categorieId  WHERE t.userId = $1 AND extract (month FROM "timeStamp") = extract (month FROM CURRENT_DATE) ORDER BY c.id ASC, t."timeStamp" ASC ;',
-    'MONTHLY_ACCOUNT_BALANCE_DETAILS': 'SELECT EXTRACT(YEAR from t."timeStamp") as year, EXTRACT(MONTH from t."timeStamp") as month,c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timeStamp" ' +
+    'CURRENT_MONTHLY_ACCOUNT_BALANCE_DETAILS': 'SELECT c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timestamp" FROM  categorie c ' +
+        'INNER JOIN TRANSACTION t ON c.id= t.categorieId  WHERE t.userId = $1 AND extract (month FROM "timestamp") = extract (month FROM CURRENT_DATE) ORDER BY c.id ASC, t."timestamp" ASC ;',
+    'MONTHLY_ACCOUNT_BALANCE_DETAILS': 'SELECT EXTRACT(YEAR from t."timestamp") as year, EXTRACT(MONTH from t."timestamp") as month,c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timestamp" ' +
         'FROM categorie c INNER JOIN TRANSACTION t ON c.id= t.categorieId WHERE t.userId = $1 ORDER BY year ASC, month ASC,c.id ASC ;',
-    'DAILY_ACCOUNT_BALANCE_DETAILS': 'SELECT EXTRACT(YEAR from t."timeStamp") as year, EXTRACT(MONTH from t."timeStamp") as month,c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timeStamp" ' +
-        'FROM categorie c INNER JOIN TRANSACTION t ON c.id= t.categorieId WHERE t.userId = $1 AND EXTRACT(DAY from t."timeStamp") = extract(day FROM CURRENT_DATE) ORDER BY year ASC, month ASC,c.id ASC ;'
+    'DAILY_ACCOUNT_BALANCE_DETAILS': 'SELECT EXTRACT(YEAR from t."timestamp") as year, EXTRACT(MONTH from t."timestamp") as month,c.id, c.name as categorieName, t.name, t.amount, t.ispositive, t."timestamp" ' +
+        'FROM categorie c INNER JOIN TRANSACTION t ON c.id= t.categorieId WHERE t.userId = $1 AND EXTRACT(DAY from t."timestamp") = extract(day FROM CURRENT_DATE) ORDER BY year ASC, month ASC,c.id ASC ;'
 };
 exports.queries = queries;

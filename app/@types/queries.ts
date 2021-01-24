@@ -5,7 +5,7 @@ export interface AccountBalanceDetails
     name: string,
     amount: number,
     ispositive: boolean,
-    timeStamp:Date
+    timestamp:Date
 }
 
 export interface AccountBalance
@@ -22,5 +22,5 @@ export interface Categorie
     name: string,
     amount: number,
     ispositive: boolean
-    timeStamp:Date
+    timestamp:Date
 }

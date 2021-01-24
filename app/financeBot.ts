@@ -101,7 +101,7 @@ const spentMoneyByCategorie = new WizardScene(
                 let amount: number = 0
                 queryResult.rows.forEach((element: Categorie) => {
                     amount = element.ispositive == true ? parseFloat("-" + element.amount) : element.amount;
-                    text += `\n Reason: ${element.name}  <b>${element.amount}€</b>  (${element.timeStamp.toLocaleDateString('de-DE', options)})`
+                    text += `\n Reason: ${element.name}  <b>${element.amount}€</b>  (${element.timestamp.toLocaleDateString('de-DE', options)})`
                     totalSum += +amount;
                 })
                 text += `\n------------------------\n<b>Total sum: ${totalSum.toFixed(2)}</b>`
@@ -401,19 +401,19 @@ bot.command('monthly_account_balance_details', async (ctx) => {
         if (queryResult.rowCount > 0) {
             let text: string = '<b> Montly account balance details </b>';
             let result: AccountBalanceDetails[] = queryResult.rows;
-            let actualMonth: number = result[0].timeStamp.getMonth();
+            let actualMonth: number = result[0].timestamp.getMonth();
             let actualStartMonthIndex: number = 0;
             let options = { month: 'long' };
             for (const index in result) {
                 if (parseInt(index) == result.length - 1) {
-                    text += `\n\n<b>++++ Costs in ${result[index].timeStamp.toLocaleDateString('en', options)} ++++</b>\n`
+                    text += `\n\n<b>++++ Costs in ${result[index].timestamp.toLocaleDateString('en', options)} ++++</b>\n`
                     text = createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index + 1)), text);
                 }
-                else if (result[index].timeStamp.getMonth() > actualMonth) {
-                    text += `\n\n<b>++++ Costs in ${result[parseInt(index) - 1].timeStamp.toLocaleDateString('en', options)} ++++</b>\n`
+                else if (result[index].timestamp.getMonth() > actualMonth) {
+                    text += `\n\n<b>++++ Costs in ${result[parseInt(index) - 1].timestamp.toLocaleDateString('en', options)} ++++</b>\n`
                     text = createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index) - 1), text);
                     actualStartMonthIndex = parseInt(index);
-                    actualMonth = result[index].timeStamp.getMonth();
+                    actualMonth = result[index].timestamp.getMonth();
                 }
             }
             printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(queryResult.rows, text)));
@@ -463,7 +463,7 @@ bot.command('daily_account_balance_details', async (ctx) => {
         if (queryResult.rowCount > 0) {
             let result: AccountBalanceDetails[] = queryResult.rows;
             let options: any = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
-            let text: string = `<b> Daily account balance details (${queryResult.rows[0].timeStamp.toLocaleDateString('en', options)})</b>\n\n`;
+            let text: string = `<b> Daily account balance details (${queryResult.rows[0].timestamp.toLocaleDateString('en', options)})</b>\n\n`;
             printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(result, text)));
         }
         else {
@@ -499,7 +499,7 @@ function createBalanceDetailsText(result: AccountBalanceDetails[], text: string)
         }
 
         let options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
-        text += `\n Reason: ${element.name}  <b>${amount}€</b>  (${element.timeStamp.toLocaleDateString('de-DE', options)})`
+        text += `\n Reason: ${element.name}  <b>${amount}€</b>  (${element.timestamp.toLocaleDateString('de-DE', options)})`
         sumOfCategorie += +amount;
         if (result[result.length - 1] === element) {
             text += `\n<b>Sum of categorie ${sumOfCategorie}€</b>`;

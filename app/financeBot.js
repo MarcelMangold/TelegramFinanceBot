@@ -138,7 +138,7 @@ var spentMoneyByCategorie = new WizardScene("spent_money_by_categorie", function
                     amount_1 = 0;
                     queryResult.rows.forEach(function (element) {
                         amount_1 = element.ispositive == true ? parseFloat("-" + element.amount) : element.amount;
-                        text_1 += "\n Reason: " + element.name + "  <b>" + element.amount + "\u20AC</b>  (" + element.timeStamp.toLocaleDateString('de-DE', options_1) + ")";
+                        text_1 += "\n Reason: " + element.name + "  <b>" + element.amount + "\u20AC</b>  (" + element.timestamp.toLocaleDateString('de-DE', options_1) + ")";
                         totalSum_1 += +amount_1;
                     });
                     text_1 += "\n------------------------\n<b>Total sum: " + totalSum_1.toFixed(2) + "</b>";
@@ -522,19 +522,19 @@ bot.command('monthly_account_balance_details', function (ctx) { return __awaiter
                 if (queryResult.rowCount > 0) {
                     text = '<b> Montly account balance details </b>';
                     result = queryResult.rows;
-                    actualMonth = result[0].timeStamp.getMonth();
+                    actualMonth = result[0].timestamp.getMonth();
                     actualStartMonthIndex = 0;
                     options = { month: 'long' };
                     for (index in result) {
                         if (parseInt(index) == result.length - 1) {
-                            text += "\n\n<b>++++ Costs in " + result[index].timeStamp.toLocaleDateString('en', options) + " ++++</b>\n";
+                            text += "\n\n<b>++++ Costs in " + result[index].timestamp.toLocaleDateString('en', options) + " ++++</b>\n";
                             text = createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index + 1)), text);
                         }
-                        else if (result[index].timeStamp.getMonth() > actualMonth) {
-                            text += "\n\n<b>++++ Costs in " + result[parseInt(index) - 1].timeStamp.toLocaleDateString('en', options) + " ++++</b>\n";
+                        else if (result[index].timestamp.getMonth() > actualMonth) {
+                            text += "\n\n<b>++++ Costs in " + result[parseInt(index) - 1].timestamp.toLocaleDateString('en', options) + " ++++</b>\n";
                             text = createBalanceDetailsText(result.slice(actualStartMonthIndex, parseInt(index) - 1), text);
                             actualStartMonthIndex = parseInt(index);
-                            actualMonth = result[index].timeStamp.getMonth();
+                            actualMonth = result[index].timestamp.getMonth();
                         }
                     }
                     printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(queryResult.rows, text)));
@@ -601,7 +601,7 @@ bot.command('daily_account_balance_details', function (ctx) { return __awaiter(v
                 if (queryResult.rowCount > 0) {
                     result = queryResult.rows;
                     options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
-                    text = "<b> Daily account balance details (" + queryResult.rows[0].timeStamp.toLocaleDateString('en', options) + ")</b>\n\n";
+                    text = "<b> Daily account balance details (" + queryResult.rows[0].timestamp.toLocaleDateString('en', options) + ")</b>\n\n";
                     printArrayAsHTML(ctx, splitMessage(createBalanceDetailsText(result, text)));
                 }
                 else {
@@ -638,7 +638,7 @@ function createBalanceDetailsText(result, text) {
             actualCategorieId = element.id;
         }
         var options = { weekday: 'short', year: '2-digit', month: '2-digit', day: '2-digit' };
-        text += "\n Reason: " + element.name + "  <b>" + amount + "\u20AC</b>  (" + element.timeStamp.toLocaleDateString('de-DE', options) + ")";
+        text += "\n Reason: " + element.name + "  <b>" + amount + "\u20AC</b>  (" + element.timestamp.toLocaleDateString('de-DE', options) + ")";
         sumOfCategorie += +amount;
         if (result[result.length - 1] === element) {
             text += "\n<b>Sum of categorie " + sumOfCategorie + "\u20AC</b>";
